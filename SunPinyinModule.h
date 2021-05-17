@@ -4,7 +4,9 @@
 #include "be-stuffs.h"
 #include <sunpinyin.h>
 
-class SunPinyinModule : public BInputServerMethod {
+class _LOCAL SunPinyinHandler;
+
+class _LOCAL SunPinyinModule : public BInputServerMethod {
 public:
 	SunPinyinModule();
 	virtual ~SunPinyinModule();
@@ -13,16 +15,24 @@ public:
 	virtual status_t		MethodActivated(bool state);
 	virtual filter_result		Filter(BMessage *message, BList *outList);
 
+	// communicate with SunPinyinHandler
+	void				EmptyMessageOutList();
+	void				AddMessageToOutList(BMessage *msg);
+	const BMessenger&		HandlerMessenger() const;
+	void				ResetSunPinyin();
+
 private:
 	BMenu *fMenu;
 	BMessenger fMessenger;
-	bool fActivated;
 
 	CIMIView *fIMView;
-	CIMIWinHandler *fIMHandler;
+	SunPinyinHandler *fIMHandler;
 
-	bool _InitSunPinyin();
-	void _DeInitSunPinyin();
+	BList fMessageOutList;
+
+	BMenu*		_GenerateMenu() const;
+	status_t	_InitSunPinyin();
+	void		_DeInitSunPinyin();
 };
 
 #endif /* __SUNPINYIN_BE_MODULES_H__ */

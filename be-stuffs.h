@@ -32,5 +32,9 @@
 #define IME_CONFIRMED_DESC			"be:confirmed"
 #endif // __LITE_BEAPI__
 
+#ifndef _LOCAL
+#define _LOCAL
+#endif
+
 #endif /* __BE_STUFFS_H__ */
 

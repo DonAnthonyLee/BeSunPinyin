@@ -1,4 +1,5 @@
 #include "SunPinyinModule.h"
+#include "SunPinyinHandler.h"
 
 static unsigned char logo_icon[] = { // 16x16
 0x21,0x21,0x21,0x21,0x21,0x21,0x21,0xff,0xff,0x21,0xff,0x21,0xff,0x21,0x21,0x21,
@@ -40,27 +41,66 @@ static unsigned char english_icon[] = { // 16x16
 };
 #endif
 
+
+
+
+
 SunPinyinModule::SunPinyinModule()
-	: BInputServerMethod("Sun 拼音", logo_icon)
+	: BInputServerMethod("Sun 拼音", logo_icon),
+	  fMenu(NULL),
+	  fIMView(NULL), fIMHandler(NULL)
 {
+	if(_InitSunPinyin() != B_OK) return;
+
+	// TODO: load preference, &etc.
+	fMenu = _GenerateMenu();
+
+	BHandler *handler = new SunPinyinMessageHandler(this);
+	if(handler == NULL) return;
+
+	be_app->Lock();
+	be_app->AddHandler(handler);
+	fMessenger = BMessenger(handler);
+	be_app->Unlock();
+
+	if(fMessenger.IsValid() == false) delete handler;
 }
 
 
 SunPinyinModule::~SunPinyinModule()
 {
+	_DeInitSunPinyin();
+	EmptyMessageOutList();
+	if(fMenu) delete fMenu;
+
+	if(fMessenger.LockTarget())
+	{
+		BLooper *looper = NULL;
+		BHandler *handler = fMessenger.Target(&looper);
+		looper->RemoveHandler(handler);
+		looper->Unlock();
+
+		delete handler;
+	}
 }
 
 
 status_t
 SunPinyinModule::InitCheck() const
 {
-	return B_OK;
+	return(fMessenger.IsValid() ? B_OK : B_ERROR);
 }
 
 
 status_t
 SunPinyinModule::MethodActivated(bool state)
 {
+	// TODO: menu, icon, &etc.
+
+	SetMenu((state ? fMenu : NULL), fMessenger);
+	if(state == false)
+		ResetSunPinyin();
+
 	return B_OK;
 }
 
@@ -68,7 +108,150 @@ SunPinyinModule::MethodActivated(bool state)
 filter_result
 SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
-	return B_DISPATCH_MESSAGE;
+	filter_result retVal = B_DISPATCH_MESSAGE;
+
+	// TODO
+	if(message->what == B_KEY_DOWN || message->what == B_KEY_UP) do
+	{
+		int32 key, modifiers;
+		int8 byte;
+		const char *bytes = NULL;
+
+		if(message->FindInt32("key", &key) != B_OK) break;
+		if(message->FindInt32("modifiers", &modifiers) != B_OK) break;
+
+		// to be sure it's a single key
+		message->FindString("bytes", &bytes);
+		if(message->FindInt8("byte", 1, &byte) == B_OK) break;
+		if(message->FindInt8("byte", &byte) != B_OK) break;
+		if(!(bytes == NULL || (strlen(bytes) == 1 && *bytes == byte))) break;
+
+		unsigned int keyCode = 0, keyState = 0;
+		switch(byte)
+		{
+			case B_ENTER: keyCode = IM_VK_ENTER; break;
+			case B_BACKSPACE: keyCode = IM_VK_BACK_SPACE; break;
+			case B_ESCAPE: keyCode = IM_VK_ESCAPE; break;
+			case B_PAGE_UP: keyCode = IM_VK_PAGE_UP; break;
+			case B_PAGE_DOWN: keyCode = IM_VK_PAGE_DOWN; break;
+			case B_END: keyCode = IM_VK_END; break;
+			case B_HOME: keyCode = IM_VK_HOME; break;
+			case B_LEFT_ARROW: keyCode = IM_VK_LEFT; break;
+			case B_RIGHT_ARROW: keyCode = IM_VK_RIGHT; break;
+			case B_UP_ARROW: keyCode = IM_VK_UP; break;
+			case B_DOWN_ARROW: keyCode = IM_VK_DOWN; break;
+			case B_DELETE: keyCode = IM_VK_DELETE; break;
+			default: keyCode = (byte < 0x20 || byte > 0x7e) ? 0x10000 : (unsigned int)byte;
+		}
+
+		if(keyCode > 0xffff) break; // unknown key, let it be
+		if(message->what == B_KEY_UP) // filtered key, skip it
+		{
+			retVal = B_SKIP_MESSAGE;
+			break;
+		}
+
+		if(modifiers & B_SHIFT_KEY) keyState |= IM_SHIFT_MASK;
+		if(modifiers & B_CONTROL_KEY) keyState |= IM_CTRL_MASK;
+		if(modifiers & B_COMMAND_KEY) keyState |= IM_ALT_MASK;
+		if(modifiers & B_MENU_KEY) keyState |= IM_SUPER_MASK;
+
+		if(fMessenger.LockTarget() == false) break;
+		BLooper *looper = NULL;
+		fMessenger.Target(&looper);
+
+		EmptyMessageOutList();
+
+		// fIMView->onKyeEvent() will call the proper handling of SunPinyinHandler
+		fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
+
+		if(fMessageOutList.CountItems() == 1 && fMessageOutList.ItemAt(0) == NULL)
+		{
+			retVal = B_SKIP_MESSAGE;
+		}
+		else if(fMessageOutList.CountItems() > 0)
+		{
+			outList->AddList(&fMessageOutList);
+			fMessageOutList.MakeEmpty();
+		}
+
+		looper->Unlock();
+	} while(false);
+
+	return retVal;
+}
+
+
+BMenu*
+SunPinyinModule::_GenerateMenu() const
+{
+	// TODO
+	return NULL;
+}
+
+
+void
+SunPinyinModule::EmptyMessageOutList()
+{
+	for(int32 k = 0; k < fMessageOutList.CountItems(); k++)
+	{
+		BMessage *msg = (BMessage*)fMessageOutList.ItemAt(k);
+		if(msg != NULL) delete msg;
+	}
+	fMessageOutList.MakeEmpty();
+}
+
+
+void
+SunPinyinModule::AddMessageToOutList(BMessage *msg)
+{
+	if(fMessageOutList.AddItem((void*)msg) == false && msg != NULL) delete msg;
+}
+
+
+const BMessenger&
+SunPinyinModule::HandlerMessenger() const
+{
+	return fMessenger;
+}
+
+
+void
+SunPinyinModule::ResetSunPinyin()
+{
+	if(fIMView) fIMView->clearIC();
+	if(fIMHandler) fIMHandler->Reset();
+}
+
+
+status_t
+SunPinyinModule::_InitSunPinyin()
+{
+	// TODO: preference
+	CSunpinyinSessionFactory::getFactory().setPinyinScheme(CSunpinyinSessionFactory::QUANPIN);
+
+	if((fIMView = CSunpinyinSessionFactory::getFactory().createSession()) == NULL) return B_ERROR;
+	if((fIMHandler = new SunPinyinHandler(this)) == NULL) return B_NO_MEMORY;
+
+	fIMView->getIC()->setCharsetLevel(1); // GBK
+	fIMView->attachWinHandler(fIMHandler);
+
+	// TODO: preference
+	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_CN, 1);
+	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLPUNC, 1);
+	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLSYMBOL, 1);
+
+	return B_OK;
+}
+
+
+void
+SunPinyinModule::_DeInitSunPinyin()
+{
+	if(fIMView)
+		CSunpinyinSessionFactory::getFactory().destroySession(fIMView);
+	if(fIMHandler)
+		delete fIMHandler;
 }
 
 

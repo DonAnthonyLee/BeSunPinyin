@@ -40,6 +40,7 @@ CFLAGS += $(SO_CFLAGS)
 CXXFLAGS = $(CFLAGS)
 
 SUNPINYIN_OBJECTS =		\
+	SunPinyinHandler.o	\
 	SunPinyinModule.o
 
 TARGETS =					\
