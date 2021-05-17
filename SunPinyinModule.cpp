@@ -58,6 +58,7 @@ SunPinyinModule::SunPinyinModule()
 	BHandler *handler = new SunPinyinMessageHandler(this);
 	if(handler == NULL) return;
 
+	// TODO: test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
 	be_app->Lock();
 	be_app->AddHandler(handler);
 	fMessenger = BMessenger(handler);
@@ -162,7 +163,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 		EmptyMessageOutList();
 
-		// fIMView->onKyeEvent() will call the proper handling of SunPinyinHandler
+		// fIMView->onKeyEvent() will call the proper handling of SunPinyinHandler
 		fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
 
 		if(fMessageOutList.CountItems() == 1 && fMessageOutList.ItemAt(0) == NULL)
