@@ -82,7 +82,6 @@ SunPinyinHandler::commit(const TWCHAR* wstr)
 
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
-	fStatusWinMessenger.SendMessage(msg);
 	fModule->AddMessageToOutList(msg);
 
 	Reset();
@@ -169,9 +168,9 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	}
 
 	BMessage aMsg(B_INPUT_METHOD_EVENT);
+	// TODO: find another way, it's NOT GOOD!
 	aMsg.AddInt32(IME_OPCODE_DESC, 1234); // custom opcode
 	aMsg.AddString("candidates", aStr.String());
-
 	fStatusWinMessenger.SendMessage(&aMsg);
 }
 
@@ -259,8 +258,11 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					BString aStr;
 					int32 index = -1;
 					if(msg->FindString(IME_STRING_DESC, &aStr) != B_OK) break;
+
+					// for now, we use selection to simulate caret position
 					msg->FindInt32(IME_SELECTION_DESC, &index);
 
+					// convert bytes offset to chars offset
 					fCaret = -1;
 					if(index >= 0 && index <= aStr.Length())
 					{
@@ -272,6 +274,20 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 
 			case B_INPUT_METHOD_LOCATION_REQUEST:
 				{
+					// TODO & NOTE:
+					//	The location reply maybe delay after current status.
+					// Message handled like below:
+					// The 1st. round (request)
+					//	SunPinyinModule -> Input Server -> View
+					//			-> SunPinyinStatusWindow (store current state through SunPinyinHandler)
+					// The 2nd. round (reply)
+					//		View -> Input Server -> SunPinyinMessageHandler -> SunPinyinStatusWindow
+					//
+					// So, probably the location reply just match the previous request, event such before last STOPPED.
+					// The way to resolve it is:
+					//	1. Filling up different BMessenger to IME_REPLY_DESC at each STARTED;
+					//	2. Checking whether the reply is fit with current status, like using count, &etc.
+
 					BString aStr(cast_as(fCandidates, BStringView)->Text());
 					if(aStr.Length() == 0) break;
 
@@ -283,6 +299,7 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					     msg->FindFloat(IME_HEIGHT_REPLY_DESC, pos, &h) == B_OK))
 					{
 						if(pos == 0) break;
+						// some platforms like EIME-XIM, the location reply is single when using XIMPreeditCallback style
 					   	if(!(msg->FindPoint(IME_LOCATION_REPLY_DESC, 0, &where) == B_OK &&
 					   	     msg->FindFloat(IME_HEIGHT_REPLY_DESC, 0, &h) == B_OK)) break;
 					}
@@ -290,12 +307,15 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					// adjust the postion
 					EScreen screen(this);
 					ERect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
-					ERect rect = Frame().OffsetToCopy(where + BPoint(0, h + 5));
+					ERect rect = Frame().OffsetToSelf(where + BPoint(0, h + 5));
 					if(scrRect.Contains(rect) == false)
 					{
 						if(rect.bottom > scrRect.bottom)
 						{
-							rect.OffsetBy(0, where.y - rect.Height() - 5 - rect.top);
+							if(h > 0.f)
+								rect.OffsetBy(0, where.y - rect.Height() - 5 - rect.top);
+							else // some platforms like EIME-XIM, the height reply maybe set to 0
+								rect.OffsetBy(0, where.y - 2 * rect.Height() - 5 - rect.top);
 							if(rect.bottom > scrRect.bottom)
 								rect.OffsetBy(0, scrRect.bottom - rect.bottom);
 						}
@@ -318,7 +338,7 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 				break;
 
 			case B_INPUT_METHOD_STOPPED:
-				if(!IsHidden()) Hide();
+				Hide();
 				cast_as(fCandidates, BStringView)->SetText("");
 				break;
 

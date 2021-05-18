@@ -49,7 +49,14 @@ SunPinyinModule::SunPinyinModule()
 {
 	BWindow *win = new SunPinyinStatusWindow();
 	win->Lock();
+#ifdef __LITE_BEAPI__
+	// for reducing thread
+	etk_app->Lock();
+	win->ProxyBy(etk_app);
+	etk_app->Unlock();
+#else
 	win->Run();
+#endif
 	fStatusWinMessenger = BMessenger(win);
 	if(fStatusWinMessenger.IsValid() == false)
 	{
@@ -66,7 +73,8 @@ SunPinyinModule::SunPinyinModule()
 	BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
 	if(handler == NULL) return;
 
-	// TODO: test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
+	// TODO: Test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
+	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
 	be_app->Lock();
 	be_app->AddHandler(handler);
 	fMessenger = BMessenger(handler);
@@ -111,6 +119,9 @@ SunPinyinModule::InitCheck() const
 status_t
 SunPinyinModule::MethodActivated(bool state)
 {
+	// NOTE:
+	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
+	// we should lock it before doing anything.
 	if(fMessenger.LockTarget() == false) return B_ERROR;
 	BLooper *looper = NULL;
 	fMessenger.Target(&looper);
@@ -177,6 +188,9 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		if(modifiers & B_COMMAND_KEY) keyState |= IM_ALT_MASK;
 		if(modifiers & B_MENU_KEY) keyState |= IM_SUPER_MASK;
 
+		// NOTE:
+		//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
+		// we should lock it before doing anything.
 		if(fMessenger.LockTarget() == false) break;
 		BLooper *looper = NULL;
 		fMessenger.Target(&looper);
