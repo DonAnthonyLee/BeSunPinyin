@@ -42,20 +42,28 @@ static unsigned char english_icon[] = { // 16x16
 #endif
 
 
-
-
-
 SunPinyinModule::SunPinyinModule()
 	: BInputServerMethod("Sun 拼音", logo_icon),
 	  fMenu(NULL),
 	  fIMView(NULL), fIMHandler(NULL)
 {
+	BWindow *win = new SunPinyinStatusWindow();
+	win->Lock();
+	win->Run();
+	fStatusWinMessenger = BMessenger(win);
+	if(fStatusWinMessenger.IsValid() == false)
+	{
+		win->Quit();
+		return;
+	}
+	win->Unlock();
+
 	if(_InitSunPinyin() != B_OK) return;
 
 	// TODO: load preference, &etc.
 	fMenu = _GenerateMenu();
 
-	BHandler *handler = new SunPinyinMessageHandler(this);
+	BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
 	if(handler == NULL) return;
 
 	// TODO: test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
@@ -70,10 +78,6 @@ SunPinyinModule::SunPinyinModule()
 
 SunPinyinModule::~SunPinyinModule()
 {
-	_DeInitSunPinyin();
-	EmptyMessageOutList();
-	if(fMenu) delete fMenu;
-
 	if(fMessenger.LockTarget())
 	{
 		BLooper *looper = NULL;
@@ -83,6 +87,17 @@ SunPinyinModule::~SunPinyinModule()
 
 		delete handler;
 	}
+
+	if(fStatusWinMessenger.LockTarget())
+	{
+		BLooper *looper = NULL;
+		fStatusWinMessenger.Target(&looper);
+		looper->Quit();
+	}
+
+	_DeInitSunPinyin();
+	EmptyMessageOutList();
+	if(fMenu) delete fMenu;
 }
 
 
@@ -96,11 +111,16 @@ SunPinyinModule::InitCheck() const
 status_t
 SunPinyinModule::MethodActivated(bool state)
 {
-	// TODO: menu, icon, &etc.
+	if(fMessenger.LockTarget() == false) return B_ERROR;
+	BLooper *looper = NULL;
+	fMessenger.Target(&looper);
 
+	// TODO: menu, icon, &etc.
 	SetMenu((state ? fMenu : NULL), fMessenger);
 	if(state == false)
 		ResetSunPinyin();
+
+	looper->Unlock();
 
 	return B_OK;
 }
@@ -232,7 +252,7 @@ SunPinyinModule::_InitSunPinyin()
 	CSunpinyinSessionFactory::getFactory().setPinyinScheme(CSunpinyinSessionFactory::QUANPIN);
 
 	if((fIMView = CSunpinyinSessionFactory::getFactory().createSession()) == NULL) return B_ERROR;
-	if((fIMHandler = new SunPinyinHandler(this)) == NULL) return B_NO_MEMORY;
+	if((fIMHandler = new SunPinyinHandler(this, fStatusWinMessenger)) == NULL) return B_NO_MEMORY;
 
 	fIMView->getIC()->setCharsetLevel(1); // GBK
 	fIMView->attachWinHandler(fIMHandler);

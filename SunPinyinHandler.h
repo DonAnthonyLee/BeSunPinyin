@@ -6,7 +6,7 @@
 class _LOCAL SunPinyinHandler : public CIMIWinHandler
 {
 public:
-	SunPinyinHandler(SunPinyinModule *module);
+	SunPinyinHandler(SunPinyinModule *module, const BMessenger &status_msgr);
 	virtual ~SunPinyinHandler();
 
 	virtual void	commit(const TWCHAR* wstr);
@@ -19,6 +19,7 @@ public:
 private:
 	SunPinyinModule *fModule;
 	bool started_sent;
+	BMessenger fStatusWinMessenger;
 
 	void		GenerateStartedMessage();
 };
@@ -27,13 +28,28 @@ private:
 class _LOCAL SunPinyinMessageHandler : public BHandler
 {
 public:
-	SunPinyinMessageHandler(SunPinyinModule *module);
+	SunPinyinMessageHandler(SunPinyinModule *module, const BMessenger &status_msgr);
 	virtual ~SunPinyinMessageHandler();
 
 	virtual void	MessageReceived(BMessage *msg);
 
 private:
 	SunPinyinModule *fModule;
+	BMessenger fStatusWinMessenger;
+};
+
+
+class _LOCAL SunPinyinStatusWindow : public BWindow
+{
+public:
+	SunPinyinStatusWindow();
+	virtual ~SunPinyinStatusWindow();
+
+	virtual void DispatchMessage(BMessage *msg, BHandler *target);
+
+private:
+	BView *fCandidates;
+	int32 fCaret;
 };
 
 #endif /* __SUNPINYIN_BE_HANDLER_H__ */

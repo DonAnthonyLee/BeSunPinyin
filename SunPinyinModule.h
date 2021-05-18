@@ -24,6 +24,7 @@ public:
 private:
 	BMenu *fMenu;
 	BMessenger fMessenger;
+	BMessenger fStatusWinMessenger;
 
 	CIMIView *fIMView;
 	SunPinyinHandler *fIMHandler;
