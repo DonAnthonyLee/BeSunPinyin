@@ -1,7 +1,7 @@
 #ifndef __SUNPINYIN_BE_MODULES_H__
 #define __SUNPINYIN_BE_MODULES_H__
 
-#include "be-stuffs.h"
+#include "be-stuff.h"
 #include <sunpinyin.h>
 
 class _LOCAL SunPinyinHandler;

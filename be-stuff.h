@@ -1,5 +1,5 @@
-#ifndef __BE_STUFFS_H__
-#define __BE_STUFFS_H__
+#ifndef __BE_STUFF_H__
+#define __BE_STUFF_H__
 
 #include <be/Be.h>
 
@@ -36,5 +36,5 @@
 #define _LOCAL
 #endif
 
-#endif /* __BE_STUFFS_H__ */
+#endif /* __BE_STUFF_H__ */
 
