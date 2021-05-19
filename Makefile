@@ -5,13 +5,22 @@ GUI_LDFLAGS =
 
 MIN_LITE_BEAPI_VER = 0.0.3
 
+IS_BEOS_PLATFORM = 0
+ifeq ($(shell uname),Haiku)
+IS_BEOS_PLATFORM = 1
+else
+ifeq ($(shell uname),BeOS)
+IS_BEOS_PLATFORM = 1
+endif
+endif
+
 TOPSRCDIR = $(shell pwd)
 
 EXTRA_CFLAGS = -I $(TOPSRCDIR)
 EXTRA_LDFLAGS =
 
 CFLAGS = $(DEBUG_OPTIONS) $(OPTIMIZE) $(EXTRA_CFLAGS)
-ifeq ($(findstring BePC,$(shell uname -a)),BePC)
+ifeq ($(IS_BEOS_PLATFORM),1)
 CFLAGS += -Wno-multichar
 LDFLAGS += -lbe -lroot -ltextencoding
 else
@@ -48,7 +57,7 @@ SUNPINYIN_OBJECTS =		\
 TARGETS =					\
 	SunPinyin$(SO_SUFFIX)
 
-ifeq ($(findstring BePC,$(shell uname -a)),BePC)
+ifeq ($(IS_BEOS_PLATFORM),1)
 all: build_targets
 else
 all:
@@ -61,9 +70,14 @@ endif
 
 build_targets: $(TARGETS)
 
-ifeq ($(findstring BePC,$(shell uname -a)),BePC)
+ifeq ($(IS_BEOS_PLATFORM),1)
+ifeq ($(shell uname),Haiku)
+_APP_:
+	ln -s /boot/system/servers/input_server _APP_
+else
 _APP_:
 	ln -s /boot/beos/system/servers/input_server _APP_
+endif
 else
 ifneq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
 _APP_:

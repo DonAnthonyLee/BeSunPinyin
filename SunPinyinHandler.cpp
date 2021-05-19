@@ -103,10 +103,21 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 {
 	const TWCHAR *wstr = ppd->string();
 	char *str = utf32_to_utf8(wstr);
+	BMessage *msg;
+
+	if(str == NULL)
+	{
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
+		fModule->AddMessageToOutList(msg);
+
+		Reset();
+		return;
+	}
 
 	GenerateStartedMessage();
 
-	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_CHANGED);
 	if(str)
 	{
@@ -306,9 +317,9 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					}
 
 					// adjust the postion
-					EScreen screen(this);
-					ERect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
-					ERect rect = Frame().OffsetToSelf(where + BPoint(0, h + 2));
+					BScreen screen(this);
+					BRect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
+					BRect rect = Frame().OffsetToSelf(where + BPoint(0, h + 2));
 					if(scrRect.Contains(rect) == false)
 					{
 						if(rect.bottom > scrRect.bottom)
@@ -352,8 +363,8 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					if(aStr.Length() > 0)
 					{
 						float w = 0, h = 0;
-						GetPreferredSize(&w, &h);
-						ResizeTo(w + 4, h + 4);
+						fCandidates->GetPreferredSize(&w, &h);
+						ResizeTo(w + 6, h + 6);
 					}
 				}
 		}

@@ -21,6 +21,7 @@
 #define IME_HEIGHT_REPLY_DESC			"etk:height_reply"
 #define IME_CONFIRMED_DESC			"etk:confirmed"
 #else // !__LITE_BEAPI__
+#include <be/add-ons/input_server/InputServerMethod.h>
 #define IME_OPCODE_DESC				"be:opcode"
 #define IME_REPLY_DESC				"be:reply_to"
 #define IME_STRING_DESC				"be:string"
