@@ -156,13 +156,13 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	BString aStr;
 
 	// TODO: do more than simple string
-	for(int k = 0; k < pcl->size(); k++)
+	for(int k = 0; k < min_c(pcl->size(), 10); k++)
 	{
 		char *s = utf32_to_utf8(pcl->candiString(k));
 		if(s)
 		{
 			if(aStr.Length() > 0) aStr << "  ";
-			aStr << (k + 1) << ". " << s;
+			aStr << ((k == 9) ? 0 : (k + 1)) << ". " << s;
 			free(s);
 		}
 	}
@@ -231,6 +231,7 @@ SunPinyinStatusWindow::SunPinyinStatusWindow()
 
 	// TODO: do more than this simple string view
 	fCandidates = new BStringView(Bounds().InsetBySelf(1, 1), NULL, NULL, B_FOLLOW_ALL);
+	cast_as(fCandidates, BStringView)->SetAlignment(B_ALIGN_CENTER);
 	fCandidates->SetFontSize(be_plain_font->Size() * 1.2f);
 	fCandidates->SetViewColor(255, 220, 0);
 	topView->AddChild(fCandidates);
@@ -307,15 +308,15 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					// adjust the postion
 					EScreen screen(this);
 					ERect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
-					ERect rect = Frame().OffsetToSelf(where + BPoint(0, h + 5));
+					ERect rect = Frame().OffsetToSelf(where + BPoint(0, h + 2));
 					if(scrRect.Contains(rect) == false)
 					{
 						if(rect.bottom > scrRect.bottom)
 						{
 							if(h > 0.f)
-								rect.OffsetBy(0, where.y - rect.Height() - 5 - rect.top);
+								rect.OffsetBy(0, where.y - rect.Height() - 2 - rect.top);
 							else // some platforms like EIME-XIM, the height reply maybe set to 0
-								rect.OffsetBy(0, where.y - 2 * rect.Height() - 5 - rect.top);
+								rect.OffsetBy(0, where.y - 2 * rect.Height() - 2 - rect.top);
 							if(rect.bottom > scrRect.bottom)
 								rect.OffsetBy(0, scrRect.bottom - rect.bottom);
 						}
