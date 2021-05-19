@@ -27,11 +27,13 @@ LDFLAGS += $(LIBSUNPINYIN_LIBS)
 SO_CFLAGS = -fPIC
 SO_SUFFIX = .so
 SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
+SO_DEPENDS = _APP_
 
 ifeq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
 SO_CFLAGS =
 SO_SUFFIX = .dll
 SO_LDFLAGS = -shared -export-dynamic -L. -leime
+SO_DEPENDS = eime.lib
 #GUI_LDFLAGS = -mwindows
 #CFLAGS += -pipe -march=i686
 endif
@@ -59,8 +61,22 @@ endif
 
 build_targets: $(TARGETS)
 
-SunPinyin$(SO_SUFFIX): $(SUNPINYIN_OBJECTS)
-	g++ $(OPTIMIZE) $^ -o $@ $(LDFLAGS) $(SO_LDFLAGS)
+ifeq ($(findstring BePC,$(shell uname -a)),BePC)
+_APP_:
+	ln -s /boot/beos/system/servers/input_server _APP_
+else
+ifneq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
+_APP_:
+	@if [ -e /usr/bin/eime ]; then \
+		ln -s /usr/bin/eime _APP_; \
+	elif [ -e /usr/bin/eime-xim ]; then \
+		ln -s /usr/bin/eime-xim _APP_; \
+	fi
+endif
+endif
+
+SunPinyin$(SO_SUFFIX): $(SUNPINYIN_OBJECTS) $(SO_DEPENDS)
+	g++ $(OPTIMIZE) $(SUNPINYIN_OBJECTS) -o $@ $(LDFLAGS) $(SO_LDFLAGS)
 
 clean:
 	rm -f $(SUNPINYIN_OBJECTS)
