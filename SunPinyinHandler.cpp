@@ -379,11 +379,8 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					}
 					MoveTo(rect.LeftTop());
 
-					if(IsHidden())
-					{
-						Show();
-						SendBehind(NULL);
-					}
+					if(IsHidden()) Show();
+					SendBehind(NULL);
 				}
 				break;
 
@@ -391,7 +388,8 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 				break;
 
 			case B_INPUT_METHOD_STOPPED:
-				Hide();
+				// NOTE: On HaikuOS, hide a hidden window cause issues.
+				if(!IsHidden()) Hide();
 				cast_as(fCandidates, BStringView)->SetText("");
 				break;
 
@@ -399,7 +397,8 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 				{
 					BString aStr;
 					msg->FindString("candidates", &aStr);
-					if(aStr.Length() == 0) Hide();
+					// NOTE: On HaikuOS, hide a hidden window cause issues.
+					if(aStr.Length() == 0 && !IsHidden()) Hide();
 					cast_as(fCandidates, BStringView)->SetText(aStr.String());
 					if(aStr.Length() > 0)
 					{
