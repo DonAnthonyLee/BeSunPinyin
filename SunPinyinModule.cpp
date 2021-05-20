@@ -247,6 +247,7 @@ SunPinyinModule::AddMessageToOutList(BMessage *msg)
 const BMessenger&
 SunPinyinModule::HandlerMessenger() const
 {
+	// TODO: return different messenger each time
 	return fMessenger;
 }
 

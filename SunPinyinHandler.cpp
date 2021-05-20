@@ -6,17 +6,54 @@
 static char* utf32_to_utf8(const TWCHAR *wstr)
 {
 #ifndef __LITE_BEAPI__
-	// BeOS always use UTF-8
 	if(wstr == NULL || *wstr == 0) return NULL;
 
-	size_t len = wcslen((const wchar_t*)wstr) * 6 + 1;
-	char *s = (char*)malloc(len);
+	// NOTE: Here we use native conversion instead of iconv
+	int32 uLen = (int32)wcslen((const wchar_t*)wstr);
+	int32 len = uLen * 6 + 1;
+	char *s = (char*)malloc((size_t)len);
 	if(s)
 	{
-		memset(s, 0, len);
-		wcstombs(s, (const wchar_t*)wstr, len);
+		int32 state = 0;
+		bzero(s, len);
+
+		uint16 *uStr = (uint16*)malloc((size_t)uLen * 2 + 1);
+		if(uStr)
+		{
+			int32 sLen = 0;
+			bzero(uStr, (size_t)uLen * 2 + 1);
+
+			uint16 *p = uStr;
+			for(int32 k = 0; k < uLen; k++)
+			{
+				uint32 c = (uint32)wstr[k];
+				if(c > 0xffff && c <= 0x10ffff)
+				{
+					*p++ = B_HOST_TO_BENDIAN_INT16(0xd800 | ((c - 0x10000) >> 10));
+					*p++ = B_HOST_TO_BENDIAN_INT16(0xdc00 | ((c - 0x10000) & 0x03ff));
+					sLen += 4;
+				}
+				else
+				{
+					*p++ = B_HOST_TO_BENDIAN_INT16(c & 0xffff);
+					sLen += 2;
+				}
+			}
+
+			if(convert_to_utf8(B_UNICODE_CONVERSION,
+					   (const char*)uStr, &sLen,
+					   s, &len, &state) == B_OK)
+			{
+				free(uStr);
+				return s;
+			}
+
+			free(uStr);
+		}
+
+		free(s);
 	}
-	return s;
+	return NULL;
 #else
 	return e_utf32_convert_to_utf8((const eunichar32*)wstr, -1);
 #endif
@@ -90,11 +127,11 @@ SunPinyinHandler::commit(const TWCHAR* wstr)
 
 inline int LENGTH_CONVERT_TO_UTF8(TWCHAR c)
 {
-    if(c < 0x80) return 1;
-    if(c < 0x800) return 2;
-    if(c < 0x10000) return 3;
-    if(c < 0x200000) return 4;
-    return(c < 0x4000000 ? 5 : 6);
+	if(c < 0x80) return 1;
+	if(c < 0x800) return 2;
+	if(c < 0x10000) return 3;
+	if(c < 0x200000) return 4;
+	return(c < 0x4000000 ? 5 : 6);
 }
 
 
@@ -244,8 +281,12 @@ SunPinyinStatusWindow::SunPinyinStatusWindow()
 	fCandidates = new BStringView(Bounds().InsetBySelf(1, 1), NULL, NULL, B_FOLLOW_ALL);
 	cast_as(fCandidates, BStringView)->SetAlignment(B_ALIGN_CENTER);
 	fCandidates->SetFontSize(be_plain_font->Size() * 1.2f);
-	fCandidates->SetViewColor(255, 220, 0);
 	topView->AddChild(fCandidates);
+
+	// NOTE:
+	//	On HaikuOS, SetViewColor() only make effection when view added to it's parent view,
+	// otherwise, it's same as parent view.
+	fCandidates->SetViewColor(255, 220, 0);
 }
 
 
