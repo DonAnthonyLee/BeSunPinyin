@@ -91,7 +91,7 @@ SunPinyinHandler::GenerateStartedMessage()
 
 	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STARTED);
-	msg->AddMessenger(IME_REPLY_DESC, fModule->HandlerMessenger());
+	msg->AddMessenger(IME_REPLY_DESC, fModule->GetHandlerMessenger());
 	fStatusWinMessenger.SendMessage(msg);
 	fModule->AddMessageToOutList(msg);
 
@@ -246,6 +246,9 @@ SunPinyinMessageHandler::~SunPinyinMessageHandler()
 void
 SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 {
+	BMessenger msgr = fModule->CurrentHandlerMessenger();
+	if(msgr.Target(NULL) != this) return;
+
 	if(msg->what == B_INPUT_METHOD_EVENT)
 	{
 		int32 opcode = 0;
@@ -327,7 +330,7 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 
 			case B_INPUT_METHOD_LOCATION_REQUEST:
 				{
-					// TODO & NOTE:
+					// NOTE:
 					//	The location reply maybe delay after current status.
 					// Message handled like below:
 					// The 1st. round (request)

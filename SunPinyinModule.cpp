@@ -44,7 +44,7 @@ static unsigned char english_icon[] = { // 16x16
 
 SunPinyinModule::SunPinyinModule()
 	: BInputServerMethod("Sun 拼音", logo_icon),
-	  fMenu(NULL),
+	  fMenu(NULL), fCurrentMessageHandlerMsgr(0),
 	  fIMView(NULL), fIMHandler(NULL)
 {
 	BWindow *win = new SunPinyinStatusWindow();
@@ -67,33 +67,50 @@ SunPinyinModule::SunPinyinModule()
 
 	if(_InitSunPinyin() != B_OK) return;
 
-	// TODO: load preference, &etc.
+	// TODO: MenuMessenger, load preference, &etc.
 	fMenu = _GenerateMenu();
-
-	BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
-	if(handler == NULL) return;
 
 	// TODO: Test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
 	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
+	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 	be_app->Lock();
-	be_app->AddHandler(handler);
-	fMessenger = BMessenger(handler);
-	be_app->Unlock();
+	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+	{
+		BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
+		if(handler == NULL) break;
 
-	if(fMessenger.IsValid() == false) delete handler;
+		be_app->AddHandler(handler);
+		fMessageHandlerMsgrs[k] = new BMessenger(handler);
+		if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
+		{
+			delete handler;
+			break;
+		}
+	}
+	be_app->Unlock();
 }
 
 
 SunPinyinModule::~SunPinyinModule()
 {
-	if(fMessenger.LockTarget())
+	if(!(fMessageHandlerMsgrs[0] == NULL || fMessageHandlerMsgrs[0]->LockTarget() == false))
 	{
 		BLooper *looper = NULL;
-		BHandler *handler = fMessenger.Target(&looper);
-		looper->RemoveHandler(handler);
-		looper->Unlock();
+		fMessageHandlerMsgrs[0]->Target(&looper);
 
-		delete handler;
+		for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+		{
+			if(fMessageHandlerMsgrs[k] == NULL) break;
+			BHandler *handler = fMessageHandlerMsgrs[k]->Target(NULL);
+			if(handler)
+			{
+				looper->RemoveHandler(handler);
+				delete handler;
+			}
+			delete fMessageHandlerMsgrs[k];
+		}
+
+		looper->Unlock();
 	}
 
 	if(fStatusWinMessenger.LockTarget())
@@ -112,7 +129,12 @@ SunPinyinModule::~SunPinyinModule()
 status_t
 SunPinyinModule::InitCheck() const
 {
-	return(fMessenger.IsValid() ? B_OK : B_ERROR);
+	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+	{
+		if(fMessageHandlerMsgrs[k] == NULL ||
+		   fMessageHandlerMsgrs[k]->IsValid() == false) return B_ERROR;
+	}
+	return B_OK;
 }
 
 
@@ -122,16 +144,28 @@ SunPinyinModule::MethodActivated(bool state)
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
 	// we should lock it before doing anything.
-	if(fMessenger.LockTarget() == false) return B_ERROR;
+	if(fMessageHandlerMsgrs[0] == NULL ||
+	   fMessageHandlerMsgrs[0]->LockTarget() == false) return B_ERROR;
 	BLooper *looper = NULL;
-	fMessenger.Target(&looper);
+	fMessageHandlerMsgrs[0]->Target(&looper);
 
 	// TODO: menu, icon, &etc.
-	SetMenu((state ? fMenu : NULL), fMessenger);
+	SetMenu((state ? fMenu : NULL), fMenuHandlerMsgr);
 	if(state == false)
 		ResetSunPinyin();
 
 	looper->Unlock();
+
+#ifndef __LITE_BEAPI__
+	// NOTE: BeOS won't send stopped message to view anyway.
+	if(state == false)
+	{
+		// Send stopped message whatever it started
+		BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
+		if(EnqueueMessage(msg) != B_OK) delete msg;
+	}
+#endif
 
 	return B_OK;
 }
@@ -191,9 +225,10 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		// NOTE:
 		//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
 		// we should lock it before doing anything.
-		if(fMessenger.LockTarget() == false) break;
+		if(fMessageHandlerMsgrs[0] == NULL ||
+		   fMessageHandlerMsgrs[0]->LockTarget() == false) break;
 		BLooper *looper = NULL;
-		fMessenger.Target(&looper);
+		fMessageHandlerMsgrs[0]->Target(&looper);
 
 		EmptyMessageOutList();
 
@@ -245,10 +280,20 @@ SunPinyinModule::AddMessageToOutList(BMessage *msg)
 
 
 const BMessenger&
-SunPinyinModule::HandlerMessenger() const
+SunPinyinModule::GetHandlerMessenger()
 {
-	// TODO: return different messenger each time
-	return fMessenger;
+	fCurrentMessageHandlerMsgr++;
+	if(fCurrentMessageHandlerMsgr >= COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
+		fCurrentMessageHandlerMsgr = 0;
+
+	return(*(fMessageHandlerMsgrs[fCurrentMessageHandlerMsgr]));
+}
+
+
+const BMessenger&
+SunPinyinModule::CurrentHandlerMessenger() const
+{
+	return(*(fMessageHandlerMsgrs[fCurrentMessageHandlerMsgr]));
 }
 
 

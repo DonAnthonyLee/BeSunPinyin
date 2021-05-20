@@ -4,6 +4,8 @@
 #include "be-stuff.h"
 #include <sunpinyin.h>
 
+#define COUNT_OF_MESSAGE_HANDLER_MESSENGERS	2
+
 class _LOCAL SunPinyinHandler;
 
 class _LOCAL SunPinyinModule : public BInputServerMethod {
@@ -18,12 +20,15 @@ public:
 	// communicate with SunPinyinHandler
 	void				EmptyMessageOutList();
 	void				AddMessageToOutList(BMessage *msg);
-	const BMessenger&		HandlerMessenger() const;
+	const BMessenger&		GetHandlerMessenger();
+	const BMessenger&		CurrentHandlerMessenger() const;
 	void				ResetSunPinyin();
 
 private:
 	BMenu *fMenu;
-	BMessenger fMessenger;
+	BMessenger fMenuHandlerMsgr;
+	int32 fCurrentMessageHandlerMsgr;
+	BMessenger *fMessageHandlerMsgrs[COUNT_OF_MESSAGE_HANDLER_MESSENGERS];
 	BMessenger fStatusWinMessenger;
 
 	CIMIView *fIMView;
