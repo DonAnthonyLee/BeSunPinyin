@@ -191,6 +191,11 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
 	filter_result retVal = B_DISPATCH_MESSAGE;
 
+	// NOTE:
+	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
+	// we should lock itself before doing anything.
+	Lock();
+
 	// TODO
 	if(fShiftKeyToSwitch && message->what == B_MODIFIERS_CHANGED)
 	{
@@ -205,11 +210,6 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 				      B_LEFT_OPTION_KEY | B_RIGHT_OPTION_KEY);
 			modifiers &= ~mask;
 			old_modifiers &= ~mask;
-
-			// NOTE:
-			//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
-			// we should lock itself before doing anything.
-			Lock();
 
 			if(modifiers == B_SHIFT_KEY && old_modifiers == 0)
 			{
@@ -233,12 +233,13 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 			{
 				fShiftKeyFollowingOthers = true;
 			}
-
-			Unlock();
 		}
 	}
-	else if((message->what == B_KEY_DOWN || message->what == B_KEY_UP) && fEnabled) do
+	else if(message->what == B_KEY_DOWN || message->what == B_KEY_UP) do
 	{
+		fShiftKeyFollowingOthers = true;
+		if(fEnabled == false) break;
+
 		int32 key, modifiers;
 		int8 byte;
 		const char *bytes = NULL;
@@ -273,11 +274,8 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		if(keyCode > 0xffff) break; // unknown key, let it be
 		if(message->what == B_KEY_UP) // filtered key, skip it if we are handling something
 		{
-			Lock();
 			if(fIMView->getIC()->isEmpty() == false)
 				retVal = B_SKIP_MESSAGE;
-			Unlock();
-
 			break;
 		}
 
@@ -285,13 +283,6 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		if(modifiers & B_CONTROL_KEY) keyState |= IM_CTRL_MASK;
 		if(modifiers & B_COMMAND_KEY) keyState |= IM_ALT_MASK;
 		if(modifiers & B_MENU_KEY) keyState |= IM_SUPER_MASK;
-
-		// NOTE:
-		//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
-		// we should lock it before doing anything.
-		Lock();
-
-		fShiftKeyFollowingOthers = true;
 
 		EmptyMessageOutList();
 
@@ -307,10 +298,9 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 			outList->AddList(&fMessageOutList);
 			fMessageOutList.MakeEmpty();
 		}
-
-		Unlock();
 	} while(false);
 
+	Unlock();
 	return retVal;
 }
 

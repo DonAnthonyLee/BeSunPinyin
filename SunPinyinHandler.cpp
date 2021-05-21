@@ -191,10 +191,6 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 	msg->AddBool(IME_CONFIRMED_DESC, false);
 	fStatusWinMessenger.SendMessage(msg);
 	fModule->AddMessageToOutList(msg);
-
-	msg = new BMessage(B_INPUT_METHOD_EVENT);
-	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_LOCATION_REQUEST);
-	fModule->AddMessageToOutList(msg);
 }
 
 
@@ -220,6 +216,13 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	aMsg.AddInt32(IME_OPCODE_DESC, 1234); // custom opcode
 	aMsg.AddString("candidates", aStr.String());
 	fStatusWinMessenger.SendMessage(&aMsg);
+
+	if(aStr.Length() > 0)
+	{
+		BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_LOCATION_REQUEST);
+		fModule->AddMessageToOutList(msg);
+	}
 }
 
 
