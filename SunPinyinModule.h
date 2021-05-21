@@ -17,6 +17,9 @@ public:
 	virtual status_t		MethodActivated(bool state);
 	virtual filter_result		Filter(BMessage *message, BList *outList);
 
+	bool				Lock();
+	void				Unlock();
+
 	// communicate with SunPinyinHandler
 	void				EmptyMessageOutList();
 	void				AddMessageToOutList(BMessage *msg);
@@ -25,6 +28,7 @@ public:
 	void				ResetSunPinyin();
 
 private:
+	BLocker fLocker;
 	BMenu *fMenu;
 	BMessenger fMenuHandlerMsgr;
 	int32 fCurrentMessageHandlerMsgr;

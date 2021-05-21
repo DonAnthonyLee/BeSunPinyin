@@ -74,7 +74,6 @@ SunPinyinModule::SunPinyinModule()
 	if(fEnabled == false)
 		SetIcon(english_icon);
 
-	// TODO: Test on BeOS/HaikuOS, if the locking blocks thread, maybe we should create looper for it.
 	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
 	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 	be_app->Lock();
@@ -131,6 +130,20 @@ SunPinyinModule::~SunPinyinModule()
 }
 
 
+bool
+SunPinyinModule::Lock()
+{
+	return fLocker.Lock();
+}
+
+
+void
+SunPinyinModule::Unlock()
+{
+	fLocker.Unlock();
+}
+
+
 status_t
 SunPinyinModule::InitCheck() const
 {
@@ -148,18 +161,15 @@ SunPinyinModule::MethodActivated(bool state)
 {
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
-	// we should lock it before doing anything.
-	if(fMessageHandlerMsgrs[0] == NULL ||
-	   fMessageHandlerMsgrs[0]->LockTarget() == false) return B_ERROR;
-	BLooper *looper = NULL;
-	fMessageHandlerMsgrs[0]->Target(&looper);
+	// we should lock itself before doing anything.
+	Lock();
 
 	// TODO: menu, icon, &etc.
 	SetMenu((state ? fMenu : NULL), fMenuHandlerMsgr);
 	if(state == false)
 		ResetSunPinyin();
 
-	looper->Unlock();
+	Unlock();
 
 #ifndef __LITE_BEAPI__
 	// NOTE: BeOS won't send stopped message to view anyway.
@@ -198,38 +208,33 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 			// NOTE:
 			//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
-			// we should lock it before doing anything.
-			if(!(fMessageHandlerMsgrs[0] == NULL ||
-			     fMessageHandlerMsgrs[0]->LockTarget() == false))
+			// we should lock itself before doing anything.
+			Lock();
+
+			if(modifiers == B_SHIFT_KEY && old_modifiers == 0)
 			{
-				BLooper *looper = NULL;
-				fMessageHandlerMsgrs[0]->Target(&looper);
-
-				if(modifiers == B_SHIFT_KEY && old_modifiers == 0)
-				{
-					fShiftKeyFollowingOthers = false;
-				}
-				else if(modifiers == 0 && old_modifiers == B_SHIFT_KEY &&
-					fShiftKeyFollowingOthers == false)
-				{
-					if(fEnabled)
-					{
-						ResetSunPinyin();
-
-						BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
-						msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
-						outList->AddItem(msg);
-					}
-					fEnabled = !fEnabled;
-					SetIcon(fEnabled ? logo_icon : english_icon);
-				}
-				else if(modifiers != 0)
-				{
-					fShiftKeyFollowingOthers = true;
-				}
-
-				looper->Unlock();
+				fShiftKeyFollowingOthers = false;
 			}
+			else if(modifiers == 0 && old_modifiers == B_SHIFT_KEY &&
+				fShiftKeyFollowingOthers == false)
+			{
+				if(fEnabled)
+				{
+					ResetSunPinyin();
+
+					BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+					msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
+					outList->AddItem(msg);
+				}
+				fEnabled = !fEnabled;
+				SetIcon(fEnabled ? logo_icon : english_icon);
+			}
+			else if(modifiers != 0)
+			{
+				fShiftKeyFollowingOthers = true;
+			}
+
+			Unlock();
 		}
 	}
 	else if((message->what == B_KEY_DOWN || message->what == B_KEY_UP) && fEnabled) do
@@ -280,10 +285,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		// NOTE:
 		//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
 		// we should lock it before doing anything.
-		if(fMessageHandlerMsgrs[0] == NULL ||
-		   fMessageHandlerMsgrs[0]->LockTarget() == false) break;
-		BLooper *looper = NULL;
-		fMessageHandlerMsgrs[0]->Target(&looper);
+		Lock();
 
 		fShiftKeyFollowingOthers = true;
 
@@ -302,7 +304,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 			fMessageOutList.MakeEmpty();
 		}
 
-		looper->Unlock();
+		Unlock();
 	} while(false);
 
 	return retVal;

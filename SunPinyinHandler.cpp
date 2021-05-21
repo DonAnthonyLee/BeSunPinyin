@@ -226,7 +226,7 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 void
 SunPinyinHandler::updateStatus(int key, int value)
 {
-	// TODO
+	// TODO: use BInputServerMethod::SetIcon()
 }
 
 
@@ -246,7 +246,9 @@ SunPinyinMessageHandler::~SunPinyinMessageHandler()
 void
 SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 {
+	if(fModule->Lock() == false) return;
 	BMessenger msgr = fModule->CurrentHandlerMessenger();
+	fModule->Unlock();
 	if(msgr.Target(NULL) != this) return;
 
 	if(msg->what == B_INPUT_METHOD_EVENT)
@@ -262,7 +264,9 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 				break;
 
 			case B_INPUT_METHOD_STOPPED:
+				if(fModule->Lock() == false) break;
 				fModule->ResetSunPinyin();
+				fModule->Unlock();
 				break;
 
 			default:
