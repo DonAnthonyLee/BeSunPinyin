@@ -225,7 +225,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 				}
 				else if(modifiers != 0)
 				{
-					fShiftKeyFollowingOthers = false;
+					fShiftKeyFollowingOthers = true;
 				}
 
 				looper->Unlock();
