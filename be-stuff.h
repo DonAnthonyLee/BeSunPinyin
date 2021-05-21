@@ -20,6 +20,7 @@
 #define IME_LOCATION_REPLY_DESC			"etk:location_reply"
 #define IME_HEIGHT_REPLY_DESC			"etk:height_reply"
 #define IME_CONFIRMED_DESC			"etk:confirmed"
+#define OLD_MODIFIERS_DESC			"etk:old_modifiers"
 #else // !__LITE_BEAPI__
 #include <be/add-ons/input_server/InputServerMethod.h>
 #define IME_OPCODE_DESC				"be:opcode"
@@ -31,6 +32,7 @@
 #define IME_LOCATION_REPLY_DESC			"be:location_reply"
 #define IME_HEIGHT_REPLY_DESC			"be:height_reply"
 #define IME_CONFIRMED_DESC			"be:confirmed"
+#define OLD_MODIFIERS_DESC			"be:old_modifiers"
 #endif // __LITE_BEAPI__
 
 #ifndef _LOCAL

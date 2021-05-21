@@ -36,6 +36,10 @@ private:
 
 	BList fMessageOutList;
 
+	bool fShiftKeyToSwitch;
+	bool fShiftKeyFollowingOthers;
+	bool fEnabled;
+
 	BMenu*		_GenerateMenu() const;
 	status_t	_InitSunPinyin();
 	void		_DeInitSunPinyin();
