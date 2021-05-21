@@ -271,9 +271,13 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		}
 
 		if(keyCode > 0xffff) break; // unknown key, let it be
-		if(message->what == B_KEY_UP) // filtered key, skip it
+		if(message->what == B_KEY_UP) // filtered key, skip it if we are handling something
 		{
-			retVal = B_SKIP_MESSAGE;
+			Lock();
+			if(fIMView->getIC()->isEmpty() == false)
+				retVal = B_SKIP_MESSAGE;
+			Unlock();
+
 			break;
 		}
 
@@ -292,9 +296,9 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		EmptyMessageOutList();
 
 		// fIMView->onKeyEvent() will call the proper handling of SunPinyinHandler
-		fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
+		bool used = fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
 
-		if(fMessageOutList.CountItems() == 1 && fMessageOutList.ItemAt(0) == NULL)
+		if(used && fMessageOutList.CountItems() == 0)
 		{
 			retVal = B_SKIP_MESSAGE;
 		}
@@ -377,7 +381,10 @@ SunPinyinModule::_InitSunPinyin()
 	fIMView->attachWinHandler(fIMHandler);
 
 	// TODO: preference
+#if 0
+	// NOTE: we don't use STATUS_ID_CN or SwitchModeKey of libsunpinyin
 	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_CN, 1);
+#endif
 	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLPUNC, 1);
 	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLSYMBOL, 1);
 
