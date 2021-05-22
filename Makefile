@@ -58,16 +58,16 @@ LIBSUNPINYIN_LIBS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --l
 CFLAGS += $(LIBSUNPINYIN_CFLAGS)
 LDFLAGS += $(LIBSUNPINYIN_LIBS)
 
-SO_CFLAGS = -fPIC
-SO_SUFFIX = .so
-SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
-SO_DEPENDS = _APP_
-
 ifeq ($(HOST),MINGW32)
 SO_CFLAGS =
 SO_SUFFIX = .dll
 SO_LDFLAGS = -shared -export-dynamic -L. -leime
 SO_DEPENDS = eime.lib
+else
+SO_CFLAGS = -fPIC
+SO_SUFFIX = .so
+SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
+SO_DEPENDS = _APP_
 endif
 
 CFLAGS += $(SO_CFLAGS)
@@ -81,7 +81,7 @@ TARGETS =			\
 	SunPinyin$(SO_SUFFIX)
 
 ifeq ($(IS_BEOS_PLATFORM),1)
-all: build_targets
+all:
 	@if ! ( PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --exists sunpinyin-2.0 ) ; then \
 		echo "*** ERROR: requires libsunpinyin-2.0"; \
 	else \
