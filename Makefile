@@ -1,18 +1,43 @@
 DEBUG_OPTIONS = -g -Wall
 #DEBUG_OPTIONS = -Wall
 OPTIMIZE = -O3
-GUI_LDFLAGS =
 
-MIN_LITE_BEAPI_VER = 0.0.3
+MIN_LITE_BEAPI_VER = 0.0.4
+
+ifeq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
+HOST := MINGW32
+else
+HOST := $(shell uname)
+endif
 
 IS_BEOS_PLATFORM = 0
-ifeq ($(shell uname),Haiku)
+ifeq ($(HOST),Haiku)
 IS_BEOS_PLATFORM = 1
 else
-ifeq ($(shell uname),BeOS)
+ifeq ($(HOST),BeOS)
 IS_BEOS_PLATFORM = 1
 endif
 endif
+
+ifeq ($(IS_BEOS_PLATFORM),1)
+PREFIX := /boot/home
+PKG_CONFIG_PATH := /boot/develop/lib/pkgconfig
+else
+ifeq ($(HOST),MINGW32)
+PREFIX := /MinGW
+PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+else
+PREFIX := /usr
+PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+endif
+endif
+
+CC := $(CROSS_COMPILE)gcc
+CXX := $(CROSS_COMPILE)g++
+LD := $(CROSS_COMPILE)ld
+DLLTOOL := $(CROSS_COMPILE)dlltool
+LITE_BEAPI_CONFIG := $(CROSS_COMPILE)lite-beapi-config
+PKG_CONFIG := $(CROSS_COMPILE)pkg-config
 
 TOPSRCDIR = $(shell pwd)
 
@@ -24,12 +49,12 @@ ifeq ($(IS_BEOS_PLATFORM),1)
 CFLAGS += -Wno-multichar
 LDFLAGS += -lbe -lroot -ltextencoding
 else
-CFLAGS += $(shell lite-beapi-config --cflags)
-LDFLAGS = $(shell lite-beapi-config --libs)
+CFLAGS += $(shell PREFIX=$(PREFIX) CROSS_COMPILE=$(CROSS_COMPILE) $(LITE_BEAPI_CONFIG) --cflags)
+LDFLAGS = $(shell PREFIX=$(PREFIX) CROSS_COMPILE=$(CROSS_COMPILE) $(LITE_BEAPI_CONFIG) --libs)
 endif
 
-LIBSUNPINYIN_CFLAGS = $(shell pkg-config --cflags sunpinyin-2.0)
-LIBSUNPINYIN_LIBS = $(shell pkg-config --libs sunpinyin-2.0)
+LIBSUNPINYIN_CFLAGS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --cflags sunpinyin-2.0)
+LIBSUNPINYIN_LIBS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --libs sunpinyin-2.0)
 CFLAGS += $(LIBSUNPINYIN_CFLAGS)
 LDFLAGS += $(LIBSUNPINYIN_LIBS)
 
@@ -38,13 +63,11 @@ SO_SUFFIX = .so
 SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
 SO_DEPENDS = _APP_
 
-ifeq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
+ifeq ($(HOST),MINGW32)
 SO_CFLAGS =
 SO_SUFFIX = .dll
 SO_LDFLAGS = -shared -export-dynamic -L. -leime
 SO_DEPENDS = eime.lib
-#GUI_LDFLAGS = -mwindows
-#CFLAGS += -pipe -march=i686
 endif
 
 CFLAGS += $(SO_CFLAGS)
@@ -54,24 +77,33 @@ SUNPINYIN_OBJECTS =		\
 	SunPinyinHandler.o	\
 	SunPinyinModule.o
 
-TARGETS =					\
+TARGETS =			\
 	SunPinyin$(SO_SUFFIX)
 
 ifeq ($(IS_BEOS_PLATFORM),1)
 all: build_targets
-else
-all:
-	@if ! ( lite-beapi-config --atleast-version $(MIN_LITE_BEAPI_VER) ) ; then \
-		echo "*** ERROR: requires Lite BeAPI >= $(MIN_LITE_BEAPI_VER) !!!"; \
+	@if ! ( PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --exists sunpinyin-2.0 ) ; then \
+		echo "*** ERROR: requires libsunpinyin-2.0"; \
 	else \
 		$(MAKE) build_targets; \
+	fi
+else
+all:
+	@if ! ( PREFIX=$(PREFIX) CROSS_COMPILE=$(CROSS_COMPILE) $(LITE_BEAPI_CONFIG) --atleast-version $(MIN_LITE_BEAPI_VER) ) ; then \
+		echo "*** ERROR: requires Lite BeAPI >= $(MIN_LITE_BEAPI_VER) !!!"; \
+	else \
+		if ! ( PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --exists sunpinyin-2.0 ) ; then \
+			echo "*** ERROR: requires libsunpinyin-2.0"; \
+		else \
+			$(MAKE) build_targets; \
+		fi; \
 	fi
 endif
 
 build_targets: $(TARGETS)
 
 ifeq ($(IS_BEOS_PLATFORM),1)
-ifeq ($(shell uname),Haiku)
+ifeq ($(HOST),Haiku)
 _APP_:
 	ln -s /boot/system/servers/input_server _APP_
 else
@@ -79,7 +111,7 @@ _APP_:
 	ln -s /boot/beos/system/servers/input_server _APP_
 endif
 else
-ifneq ($(findstring MINGW32,$(shell uname -a)),MINGW32)
+ifneq ($(HOST),MINGW32)
 _APP_:
 	@if [ -e /usr/bin/eime ]; then \
 		ln -s /usr/bin/eime _APP_; \
@@ -90,7 +122,7 @@ endif
 endif
 
 SunPinyin$(SO_SUFFIX): $(SUNPINYIN_OBJECTS) $(SO_DEPENDS)
-	g++ $(OPTIMIZE) $(SUNPINYIN_OBJECTS) -o $@ $(LDFLAGS) $(SO_LDFLAGS)
+	$(CXX) $(OPTIMIZE) $(SUNPINYIN_OBJECTS) -o $@ $(LDFLAGS) $(SO_LDFLAGS)
 
 clean:
 	rm -f $(SUNPINYIN_OBJECTS)
