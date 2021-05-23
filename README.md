@@ -14,7 +14,7 @@ Ubuntu Linux 系统中可通过 apt-get install libsunpinyin-dev 安装；
 
 HaikuOS 系统中可对其 SConstruct 作如下补丁后编译，可能同时需要手动安装 sqlite3 开发库；BeOS 系统目前几乎无法在大多数机器上运行，因此暂且略过，有需要者自请神通。
 
-```
+```python
 --- sunpinyin-3.0.0~git20160910/SConstruct	2021-05-14 13:20:16.026214400 +0000
 +++ sunpinyin-3.0.0~working/SConstruct	2021-05-20 12:07:11.472383488 +0000
 @@ -221,6 +221,9 @@
@@ -42,8 +42,8 @@ HaikuOS 系统中可对其 SConstruct 作如下补丁后编译，可能同时需
 
 **2. Lite BeAPI**
 
-	仅在非 BeOS/HaikuOS 系统中有此依赖。
+仅在非 BeOS/HaikuOS 系统中有此依赖。
 
 **3. EIME 或 input_server**
 
-	BeOS/HaikuOS 系统下将在运行 make 进行编译时自动进行链接；非 BeOS/HaikuOS 依赖 EIME/EIME-XIM/EIME-TSF 等。
+BeOS/HaikuOS 系统中将在运行 make 进行编译时自动进行链接；非 BeOS/HaikuOS 系统依赖 EIME/EIME-XIM/EIME-TSF 等。
