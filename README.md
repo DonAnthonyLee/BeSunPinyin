@@ -38,15 +38,6 @@ HaikuOS 系统中可对其 SConstruct 作如下补丁后编译，可能同时需
  env['ENABLE_PLUGINS'] = GetOption('enable_plugins')
  
  opts.Save('configure.conf', env)
-@@ -357,7 +364,7 @@
-         if not conf.CheckPKGConfig():
-             Exit(1)
-         if not conf.CheckPKG('sqlite3'):
--            Exit(1)
-+   	        Exit(1)
- 
-     if conf.env['ENABLE_PLUGINS']:
-         if not conf.CheckPython():
 ```
 
 **2. Lite BeAPI**
