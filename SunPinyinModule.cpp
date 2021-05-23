@@ -282,7 +282,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		if(modifiers & B_SHIFT_KEY) keyState |= IM_SHIFT_MASK;
 		if(modifiers & B_CONTROL_KEY) keyState |= IM_CTRL_MASK;
 		if(modifiers & B_COMMAND_KEY) keyState |= IM_ALT_MASK;
-		if(modifiers & B_MENU_KEY) keyState |= IM_SUPER_MASK;
+		if(modifiers & B_OPTION_KEY) keyState |= IM_SUPER_MASK;
 
 		EmptyMessageOutList();
 
