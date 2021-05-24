@@ -180,13 +180,13 @@ SunPinyinModule::InitCheck()
 			strInfo << "\nOther infomation:\n";
 		}
 
-		strInfo << "\nUnable to initialize SunPinyin input method addon!!!";
+		strInfo << "Unable to initialize SunPinyin input method addon!!!";
 		(new BAlert("SunPinyin",
 			    strInfo.String(),
 			    "OK"))->Go((BInvoker*)NULL);
 	}
 
-	return B_ERROR;
+	return retVal;
 }
 
 
