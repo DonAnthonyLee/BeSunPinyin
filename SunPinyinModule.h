@@ -48,7 +48,6 @@ private:
 	bool fShiftKeyFollowingOthers;
 	bool fEnabled;
 
-	bool fWarned;
 	BString fErrorInfo;
 
 	BMenu*		_GenerateMenu() const;

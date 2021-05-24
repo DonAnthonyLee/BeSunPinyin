@@ -46,7 +46,7 @@ SunPinyinModule::SunPinyinModule()
 	  fMenu(NULL), fCurrentMessageHandlerMsgr(0),
 	  fIMView(NULL), fIMHandler(NULL),
 	  fShiftKeyToSwitch(true),
-	  fEnabled(true), fWarned(false)
+	  fEnabled(true)
 {
 	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 
@@ -92,7 +92,7 @@ SunPinyinModule::SunPinyinModule()
 		fMessageHandlerMsgrs[k] = new BMessenger(handler);
 		if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
 		{
-			fErrorInfo << "Failed to initiliaze fMessageHandlerMsgrs[" << k << "]!\n";
+			fErrorInfo << "Failed to initialize fMessageHandlerMsgrs[" << k << "]!\n";
 			be_app->RemoveHandler(handler);
 			delete handler;
 			break;
@@ -158,12 +158,35 @@ SunPinyinModule::InitCheck() const
 SunPinyinModule::InitCheck()
 #endif
 {
+	status_t retVal = B_OK;
+
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
 	{
 		if(fMessageHandlerMsgrs[k] == NULL ||
-		   fMessageHandlerMsgrs[k]->IsValid() == false) return B_ERROR;
+		   fMessageHandlerMsgrs[k]->IsValid() == false)
+		{
+			retVal = B_ERROR;
+			break;
+		}
 	}
-	return B_OK;
+
+	if(retVal != B_OK)
+	{
+		BString strInfo;
+		if(fErrorInfo.Length() > 0)
+		{
+			strInfo << "Error infomation:\n";
+			strInfo.Append(fErrorInfo.String());
+			strInfo << "\nOther infomation:\n";
+		}
+
+		strInfo << "\nUnable to initialize SunPinyin input method addon!!!";
+		(new BAlert("SunPinyin",
+			    strInfo.String(),
+			    "OK"))->Go((BInvoker*)NULL);
+	}
+
+	return B_ERROR;
 }
 
 
@@ -201,35 +224,6 @@ filter_result
 SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
 	filter_result retVal = B_DISPATCH_MESSAGE;
-
-#ifndef __LITE_BEAPI__
-	if(fWarned == false && (InitCheck() != B_OK || message == NULL || outList == NULL))
-	{
-		BString strInfo;
-		if(fErrorInfo.Length() > 0)
-		{
-			strInfo << "Error infomation:\n";
-			strInfo.Append(fErrorInfo.String());
-			strInfo << "\nOther infomation:\n";
-		}
-
-		if(InitCheck() != B_OK)
-			strInfo << "InitCheck() != B_OK\n";
-		if(message == NULL)
-			strInfo << "message == NULL\n";
-		if(outList == NULL)
-			strInfo << "outList == NULL\n";
-
-		strInfo << "\nIT SHOULD NEVER HAPPENED!!!";
-		(new BAlert("BeSunPinyin",
-			    strInfo.String(),
-			    "OK"))->Go((BInvoker*)NULL);
-
-		fWarned = true;
-	}
-	if(fWarned)
-		return retVal;
-#endif
 
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
