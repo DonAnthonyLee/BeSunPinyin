@@ -17,7 +17,16 @@ HaikuOS 系统中可对其 SConstruct 作如下补丁后编译，可能同时需
 ```python
 --- sunpinyin-3.0.0~git20160910/SConstruct	2021-05-14 13:20:16.026214400 +0000
 +++ sunpinyin-3.0.0~working/SConstruct	2021-05-20 12:07:11.472383488 +0000
-@@ -221,6 +221,9 @@
+@@ -1,7 +1,7 @@
+ import platform
+ import os
+ import sys
+-
++from functools import reduce
+ 
+ version = "2.0.4"
+ abi_major = 3
+@@ -221,13 +221,16 @@
                        tools=['default', 'textfile'])
      env.Append(BUILDERS={'InstallAsSymlink': libln_builder})
      env['ENDIANNESS'] = "be" if sys.byteorder == "big" else "le"
@@ -27,17 +36,36 @@ HaikuOS 系统中可对其 SConstruct 作如下补丁后编译，可能同时需
      return env
  
  
+ def PassVariables(envvar, env):
+     for (x, y) in envvar:
+         if x in os.environ:
+-            print 'Warning: you\'ve set %s in the environmental variable!' % x
++            print ('Warning: you\'ve set %s in the environmental variable!' % x)
+             env[y] = os.environ[x]
+ 
+ env = CreateEnvironment()
 @@ -244,6 +247,10 @@
  if GetOption('datadir') is not None:
      env['DATADIR'] = GetOption('datadir')
  
 +if GetOS() == 'Haiku':
 +	env.Append(LIBPATH="/boot/develop/lib")
-+	env['DATADIR'] = '/boot/home/config/lib'
++	env['DATADIR'] = '/boot/system/lib'
 +
  env['ENABLE_PLUGINS'] = GetOption('enable_plugins')
  
  opts.Save('configure.conf', env)
+--- sunpinyin-3.0.0~git20160910/src/SConscript	2021-05-14 13:20:16.026214400 +0000
++++ sunpinyin-3.0.0~working/src/SConscript	2021-05-20 12:07:11.472383488 +0000
+@@ -53,7 +53,7 @@
+ })
+ env.Command('sunpinyin-dictgen', 'sunpinyin-dictgen.mk', [
+     Copy("$TARGET", "$SOURCE"),
+-    Chmod("$TARGET", 0755),
++#    Chmod("$TARGET", 0755),
+ ])
+ 
+ # -*- indent-tabs-mode: nil -*- vim:et:ts=4
 ```
 
 **2. Lite BeAPI**
