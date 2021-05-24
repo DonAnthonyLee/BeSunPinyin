@@ -46,8 +46,10 @@ SunPinyinModule::SunPinyinModule()
 	  fMenu(NULL), fCurrentMessageHandlerMsgr(0),
 	  fIMView(NULL), fIMHandler(NULL),
 	  fShiftKeyToSwitch(true),
-	  fEnabled(true)
+	  fEnabled(true), fWarned(false)
 {
+	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
+
 	BWindow *win = new SunPinyinStatusWindow();
 	win->Lock();
 #ifdef __LITE_BEAPI__
@@ -61,12 +63,17 @@ SunPinyinModule::SunPinyinModule()
 	fStatusWinMessenger = BMessenger(win);
 	if(fStatusWinMessenger.IsValid() == false)
 	{
+		fErrorInfo << "Failed to initialize fStatusWinMessenger!\n";
 		win->Quit();
 		return;
 	}
 	win->Unlock();
 
-	if(_InitSunPinyin() != B_OK) return;
+	if(_InitSunPinyin() != B_OK)
+	{
+		fErrorInfo << "_InitSunPinyin() failed!\n";
+		return;
+	}
 
 	// TODO: MenuMessenger, load preference, &etc.
 	fMenu = _GenerateMenu();
@@ -75,7 +82,6 @@ SunPinyinModule::SunPinyinModule()
 		SetIcon(english_icon);
 
 	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
-	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 	be_app->Lock();
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
 	{
@@ -86,6 +92,7 @@ SunPinyinModule::SunPinyinModule()
 		fMessageHandlerMsgrs[k] = new BMessenger(handler);
 		if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
 		{
+			fErrorInfo << "Failed to initiliaze fMessageHandlerMsgrs[" << k << "]!\n";
 			be_app->RemoveHandler(handler);
 			delete handler;
 			break;
@@ -190,6 +197,36 @@ filter_result
 SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
 	filter_result retVal = B_DISPATCH_MESSAGE;
+
+	// NOTE:
+	//	On HaikuOS, input server will call BInputServerMethod::Filter() even
+	// this->InitCheck() return B_ERROR!!!
+	if(fWarned == false && (InitCheck() != B_OK || message == NULL || outList == NULL))
+	{
+		BString strInfo;
+		if(fErrorInfo.Length() > 0)
+		{
+			strInfo << "Error infomation:\n";
+			strInfo.Append(fErrorInfo.String());
+			strInfo << "\nOther infomation:\n";
+		}
+
+		if(InitCheck() != B_OK)
+			strInfo << "InitCheck() != B_OK\n";
+		if(message == NULL)
+			strInfo << "message == NULL\n";
+		if(outList == NULL)
+			strInfo << "outList == NULL\n";
+
+		strInfo << "\nIT SHOULD NEVER HAPPENED!!!";
+		(new BAlert("BeSunPinyin",
+			    strInfo.String(),
+			    "OK"))->Go((BInvoker*)NULL);
+
+		fWarned = true;
+	}
+	if(fWarned)
+		return retVal;
 
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
@@ -362,10 +399,23 @@ status_t
 SunPinyinModule::_InitSunPinyin()
 {
 	// TODO: preference
-	CSunpinyinSessionFactory::getFactory().setPinyinScheme(CSunpinyinSessionFactory::QUANPIN);
+	CSunpinyinSessionFactory &factory = CSunpinyinSessionFactory::getFactory();
+	factory.setLanguage(CSunpinyinSessionFactory::SIMPLIFIED_CHINESE);
+	factory.setInputStyle(CSunpinyinSessionFactory::CLASSIC_STYLE);
+	factory.setPinyinScheme(CSunpinyinSessionFactory::QUANPIN);
+	factory.setCandiWindowSize(10);
 
-	if((fIMView = CSunpinyinSessionFactory::getFactory().createSession()) == NULL) return B_ERROR;
-	if((fIMHandler = new SunPinyinHandler(this, fStatusWinMessenger)) == NULL) return B_NO_MEMORY;
+	if((fIMView = factory.createSession()) == NULL ||
+	   fIMView->getIC() == NULL)
+	{
+		fErrorInfo << "Failed to initialize fIMView!\n";
+		return B_ERROR;
+	}
+	if((fIMHandler = new SunPinyinHandler(this, fStatusWinMessenger)) == NULL)
+	{
+		fErrorInfo << "Failed to allocate memory for fIMHandler!\n";
+		return B_NO_MEMORY;
+	}
 
 	fIMView->getIC()->setCharsetLevel(1); // GBK
 	fIMView->attachWinHandler(fIMHandler);
