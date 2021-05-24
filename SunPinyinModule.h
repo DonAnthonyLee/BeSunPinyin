@@ -13,7 +13,11 @@ public:
 	SunPinyinModule();
 	virtual ~SunPinyinModule();
 
+#ifdef __LITE_BEAPI__
 	virtual status_t		InitCheck() const;
+#else
+	virtual status_t		InitCheck();
+#endif
 	virtual status_t		MethodActivated(bool state);
 	virtual filter_result		Filter(BMessage *message, BList *outList);
 

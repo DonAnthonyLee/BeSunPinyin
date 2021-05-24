@@ -152,7 +152,11 @@ SunPinyinModule::Unlock()
 
 
 status_t
+#ifdef __LITE_BEAPI__
 SunPinyinModule::InitCheck() const
+#else
+SunPinyinModule::InitCheck()
+#endif
 {
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
 	{
@@ -198,9 +202,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
 	filter_result retVal = B_DISPATCH_MESSAGE;
 
-	// NOTE:
-	//	On HaikuOS, input server will call BInputServerMethod::Filter() even
-	// this->InitCheck() return B_ERROR!!!
+#ifndef __LITE_BEAPI__
 	if(fWarned == false && (InitCheck() != B_OK || message == NULL || outList == NULL))
 	{
 		BString strInfo;
@@ -227,6 +229,7 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 	}
 	if(fWarned)
 		return retVal;
+#endif
 
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
