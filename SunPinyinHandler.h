@@ -3,6 +3,11 @@
 
 #include "SunPinyinModule.h"
 
+#define MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY	'msg1'
+#define MSG_MENU_USE_PAGE_KEYS_GROUP1		'msg2'
+#define MSG_MENU_USE_PAGE_KEYS_GROUP2		'msg3'
+#define MSG_MENU_USE_PAGE_KEYS_GROUP3		'msg4'
+
 class _LOCAL SunPinyinHandler : public CIMIWinHandler
 {
 public:

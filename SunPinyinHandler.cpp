@@ -249,13 +249,15 @@ SunPinyinMessageHandler::~SunPinyinMessageHandler()
 void
 SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 {
-	if(fModule->Lock() == false) return;
-	BMessenger msgr = fModule->CurrentHandlerMessenger();
-	fModule->Unlock();
-	if(msgr.Target(NULL) != this) return;
+	uint8 bit = 0;
 
 	if(msg->what == B_INPUT_METHOD_EVENT)
 	{
+		if(fModule->Lock() == false) return;
+		BMessenger msgr = fModule->CurrentHandlerMessenger();
+		fModule->Unlock();
+		if(msgr.Target(NULL) != this) return;
+
 		int32 opcode = 0;
 		msg->FindInt32(IME_OPCODE_DESC, &opcode);
 
@@ -275,6 +277,28 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 			default:
 				break;
 		}
+	}
+	else switch(msg->what) // as menu handler
+	{
+		case MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY:
+			msg->PrintToStream();
+			fModule->Lock();
+			fModule->SwitchShiftKeyUsing();
+			fModule->Unlock();
+			break;
+
+		case MSG_MENU_USE_PAGE_KEYS_GROUP3:
+			bit = 2;
+		case MSG_MENU_USE_PAGE_KEYS_GROUP2:
+			if(bit == 0) bit = 1;
+		case MSG_MENU_USE_PAGE_KEYS_GROUP1:
+			fModule->Lock();
+			fModule->SwitchPageKeysGroup(bit);
+			fModule->Unlock();
+			break;
+
+		default:
+			break;
 	}
 }
 

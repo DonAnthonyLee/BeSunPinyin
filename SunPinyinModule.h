@@ -38,6 +38,10 @@ public:
 	const BMessenger&		CurrentHandlerMessenger() const;
 	void				ResetSunPinyin();
 
+	// for fMenuHandlerMsgr
+	void				SwitchShiftKeyUsing();
+	void				SwitchPageKeysGroup(uint8 bit);
+
 private:
 	BLocker fLocker;
 	BMenu *fMenu;
@@ -52,12 +56,16 @@ private:
 	BList fMessageOutList;
 
 	bool fShiftKeyToSwitch;
+	uint8 fPageKeysGroupFlags;
+
 	bool fShiftKeyFollowingOthers;
 	bool fEnabled;
+	bool fActivated;
 
 	BString fErrorInfo;
 
 	BMenu*		_GenerateMenu() const;
+	void		_RegenMenu();
 	status_t	_InitSunPinyin();
 	void		_DeInitSunPinyin();
 };

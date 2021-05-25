@@ -45,8 +45,8 @@ SunPinyinModule::SunPinyinModule()
 	: BInputServerMethod("Sun 拼音", logo_icon),
 	  fMenu(NULL), fCurrentMessageHandlerMsgr(0),
 	  fIMView(NULL), fIMHandler(NULL),
-	  fShiftKeyToSwitch(true),
-	  fEnabled(true)
+	  fShiftKeyToSwitch(true), fPageKeysGroupFlags(0x3),
+	  fEnabled(true), fActivated(false)
 {
 	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 
@@ -69,13 +69,14 @@ SunPinyinModule::SunPinyinModule()
 	}
 	win->Unlock();
 
+	// TODO: load config
+
 	if(_InitSunPinyin() != B_OK)
 	{
 		fErrorInfo << "_InitSunPinyin() failed!\n";
 		return;
 	}
 
-	// TODO: MenuMessenger, load preference, &etc.
 	fMenu = _GenerateMenu();
 
 	if(fEnabled == false)
@@ -83,19 +84,32 @@ SunPinyinModule::SunPinyinModule()
 
 	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
 	be_app->Lock();
-	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 	{
 		BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
 		if(handler == NULL) break;
 
 		be_app->AddHandler(handler);
-		fMessageHandlerMsgrs[k] = new BMessenger(handler);
-		if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
+		if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
 		{
-			fErrorInfo << "Failed to initialize fMessageHandlerMsgrs[" << k << "]!\n";
-			be_app->RemoveHandler(handler);
-			delete handler;
-			break;
+			fMessageHandlerMsgrs[k] = new BMessenger(handler);
+			if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
+			{
+				fErrorInfo << "Failed to initialize fMessageHandlerMsgrs[" << k << "]!\n";
+				be_app->RemoveHandler(handler);
+				delete handler;
+				break;
+			}
+		}
+		else
+		{
+			fMenuHandlerMsgr = BMessenger(handler);
+			if(fMenuHandlerMsgr.IsValid() == false)
+			{
+				fErrorInfo << "Failed to initialize fMenuHandlerMsg!\n";
+				be_app->RemoveHandler(handler);
+				delete handler;
+			}
 		}
 	}
 	be_app->Unlock();
@@ -109,16 +123,28 @@ SunPinyinModule::~SunPinyinModule()
 		BLooper *looper = NULL;
 		fMessageHandlerMsgrs[0]->Target(&looper);
 
-		for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+		for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 		{
-			if(fMessageHandlerMsgrs[k] == NULL) break;
-			BHandler *handler = fMessageHandlerMsgrs[k]->Target(NULL);
+			BHandler *handler;
+
+			if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
+			{
+				if(fMessageHandlerMsgrs[k] == NULL) break;
+				handler = fMessageHandlerMsgrs[k]->Target(NULL);
+			}
+			else
+			{
+				handler = fMenuHandlerMsgr.Target(NULL);
+			}
+
 			if(handler)
 			{
 				looper->RemoveHandler(handler);
 				delete handler;
 			}
-			delete fMessageHandlerMsgrs[k];
+
+			if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
+				delete fMessageHandlerMsgrs[k];
 		}
 
 		looper->Unlock();
@@ -133,7 +159,7 @@ SunPinyinModule::~SunPinyinModule()
 
 	_DeInitSunPinyin();
 	EmptyMessageOutList();
-	if(fMenu) delete fMenu;
+	delete fMenu;
 }
 
 
@@ -160,7 +186,11 @@ SunPinyinModule::InitCheck()
 {
 	status_t retVal = B_OK;
 
-	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+	if(fMenuHandlerMsgr.IsValid() == false)
+	{
+		retVal = B_ERROR;
+	}
+	else for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
 	{
 		if(fMessageHandlerMsgrs[k] == NULL ||
 		   fMessageHandlerMsgrs[k]->IsValid() == false)
@@ -175,9 +205,9 @@ SunPinyinModule::InitCheck()
 		BString strInfo;
 		if(fErrorInfo.Length() > 0)
 		{
-			strInfo << "Error infomation:\n";
+			strInfo << "Error information:\n";
 			strInfo.Append(fErrorInfo.String());
-			strInfo << "\nOther infomation:\n";
+			strInfo << "\nOther information:\n";
 		}
 
 		strInfo << "Unable to initialize SunPinyin input method addon!!!";
@@ -202,6 +232,8 @@ SunPinyinModule::MethodActivated(bool state)
 	SetMenu((state ? fMenu : NULL), fMenuHandlerMsgr);
 	if(state == false)
 		ResetSunPinyin();
+
+	fActivated = state;
 
 	Unlock();
 
@@ -342,10 +374,43 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 BMenu*
 SunPinyinModule::_GenerateMenu() const
 {
-	// TODO
-	return NULL;
+	BMenu *menu = new BMenu(NULL, B_ITEMS_IN_COLUMN);
+
+	BMenuItem *item = new BMenuItem("启用 SHIFT 切换中英文", new BMessage(MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY));
+	if(fShiftKeyToSwitch) item->SetMarked(true);
+	menu->AddItem(item);
+
+	menu->AddSeparatorItem();
+
+	BMenu *submenu = new BMenu("附加翻页键", B_ITEMS_IN_COLUMN);
+	submenu->SetRadioMode(false);
+	menu->AddItem(submenu);
+
+	item = new BMenuItem("启用减号与等号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP1));
+	if(fPageKeysGroupFlags & 0x01) item->SetMarked(true);
+	submenu->AddItem(item);
+
+	item = new BMenuItem("启用逗号与句号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP2));
+	if(fPageKeysGroupFlags & 0x02) item->SetMarked(true);
+	submenu->AddItem(item);
+
+	item = new BMenuItem("启用中括号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP3));
+	if(fPageKeysGroupFlags & 0x04) item->SetMarked(true);
+	submenu->AddItem(item);
+
+	return menu;
 }
 
+
+void
+SunPinyinModule::_RegenMenu()
+{
+	delete fMenu;
+	fMenu = _GenerateMenu();
+
+	if(fActivated)
+		SetMenu(fMenu, fMenuHandlerMsgr);
+}
 
 void
 SunPinyinModule::EmptyMessageOutList()
@@ -392,10 +457,65 @@ SunPinyinModule::ResetSunPinyin()
 }
 
 
+void
+SunPinyinModule::SwitchShiftKeyUsing()
+{
+	fShiftKeyToSwitch = !fShiftKeyToSwitch;
+
+	// TODO: save config
+
+	_RegenMenu();
+}
+
+
+void
+SunPinyinModule::SwitchPageKeysGroup(uint8 bit)
+{
+	char keys[2];
+	switch(bit)
+	{
+		case 0:
+			keys[0] = '-';
+			keys[1] = '=';
+			break;
+
+		case 1:
+			keys[0] = ',';
+			keys[1] = '.';
+			break;
+
+		case 2:
+			keys[0] = '[';
+			keys[1] = ']';
+			break;
+
+		default:
+			return;
+	}
+
+	CHotkeyProfile *profile = fIMView->getHotkeyProfile();
+	if(fPageKeysGroupFlags & (0x1 << bit))
+	{
+		fPageKeysGroupFlags &= ~(0x1 << bit);
+		profile->removePageUpKey(CKeyEvent((unsigned int)keys[0], (unsigned int)keys[0], 0));
+		profile->removePageDownKey(CKeyEvent((unsigned int)keys[1], (unsigned int)keys[1], 0));
+	}
+	else
+	{
+		fPageKeysGroupFlags |= ~(0x1 << bit);
+		profile->addPageUpKey(CKeyEvent((unsigned int)keys[0], (unsigned int)keys[0], 0));
+		profile->addPageDownKey(CKeyEvent((unsigned int)keys[1], (unsigned int)keys[1], 0));
+	}
+
+	// TODO: save config
+
+	_RegenMenu();
+}
+
+
 status_t
 SunPinyinModule::_InitSunPinyin()
 {
-	// TODO: preference
 	CSunpinyinSessionFactory &factory = CSunpinyinSessionFactory::getFactory();
 	factory.setLanguage(CSunpinyinSessionFactory::SIMPLIFIED_CHINESE);
 	factory.setInputStyle(CSunpinyinSessionFactory::CLASSIC_STYLE);
@@ -417,7 +537,25 @@ SunPinyinModule::_InitSunPinyin()
 	fIMView->getIC()->setCharsetLevel(1); // GBK
 	fIMView->attachWinHandler(fIMHandler);
 
-	// TODO: preference
+	CHotkeyProfile *profile = fIMView->getHotkeyProfile();
+	if(fPageKeysGroupFlags & 0x1)
+	{
+		profile->addPageUpKey(CKeyEvent((unsigned int)'-', (unsigned int)'-', 0));
+		profile->addPageDownKey(CKeyEvent((unsigned int)'=', (unsigned int)'=', 0));
+	}
+	if(fPageKeysGroupFlags & 0x2)
+	{
+		profile->addPageUpKey(CKeyEvent((unsigned int)',', (unsigned int)',', 0));
+		profile->addPageDownKey(CKeyEvent((unsigned int)'.', (unsigned int)'.', 0));
+	}
+	if(fPageKeysGroupFlags & 0x4)
+	{
+		profile->addPageUpKey(CKeyEvent((unsigned int)'[', (unsigned int)'[', 0));
+		profile->addPageDownKey(CKeyEvent((unsigned int)']', (unsigned int)']', 0));
+	}
+
+	// TODO
+
 #if 0
 	// NOTE: we don't use STATUS_ID_CN or SwitchModeKey of libsunpinyin
 	fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_CN, 1);
