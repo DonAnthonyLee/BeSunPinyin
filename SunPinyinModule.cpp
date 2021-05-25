@@ -502,7 +502,7 @@ SunPinyinModule::SwitchPageKeysGroup(uint8 bit)
 	}
 	else
 	{
-		fPageKeysGroupFlags |= ~(0x1 << bit);
+		fPageKeysGroupFlags |= (0x1 << bit);
 		profile->addPageUpKey(CKeyEvent((unsigned int)keys[0], (unsigned int)keys[0], 0));
 		profile->addPageDownKey(CKeyEvent((unsigned int)keys[1], (unsigned int)keys[1], 0));
 	}

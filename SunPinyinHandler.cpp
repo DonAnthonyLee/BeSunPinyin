@@ -281,7 +281,6 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 	else switch(msg->what) // as menu handler
 	{
 		case MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY:
-			msg->PrintToStream();
 			fModule->Lock();
 			fModule->SwitchShiftKeyUsing();
 			fModule->Unlock();
