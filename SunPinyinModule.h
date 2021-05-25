@@ -19,12 +19,13 @@ public:
 	virtual status_t		InitCheck();
 #endif
 
-	// NOTE: The description below came from ETK++.
-	// MethodAtivated() & Filter():
+	virtual status_t		MethodActivated(bool state);
+
+	// NOTE: The description below came from the ETK++.
+	// Filter():
 	//	In order to use the filter in the appplication which implemented with
 	// the same graphics engine, please use asynchronous message (sent without reply)
-	// to notify other threads instead of calling the GUI stuff.
-	virtual status_t		MethodActivated(bool state);
+	// to notify other threads instead of calling the GUI stuff directly.
 	virtual filter_result		Filter(BMessage *message, BList *outList);
 
 	bool				Lock();
