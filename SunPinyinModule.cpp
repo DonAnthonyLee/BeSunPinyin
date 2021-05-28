@@ -1,6 +1,17 @@
 #include "SunPinyinModule.h"
 #include "SunPinyinHandler.h"
 
+
+// NOTE:
+// 	When the graphics engine of input server or application using the filters
+// itself in it's input method implementation, such as preference dialog, &etc,
+// using GUI inside Filter() might cause dead-lock issues.
+// 	If the input server uses no filter like that, or the GUI operation is
+// the business of other server, such as BeOS/HaikuOS, it won't be a matter.
+// 	Anyway, keeping GUI out of locking will do no harm to anything.
+#define GUI_OUT_OF_LOCKING
+
+
 static unsigned char logo_icon[] = { // 16x16
 0x21,0x21,0x21,0x21,0x21,0x21,0x21,0xff,0xff,0x21,0xff,0x21,0xff,0x21,0x21,0x21,
 0x21,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x21,0xff,0x21,0xff,0x21,0xff,0x21,
@@ -174,6 +185,17 @@ void
 SunPinyinModule::Unlock()
 {
 	fLocker.Unlock();
+}
+
+
+bool
+SunPinyinModule::IsLocked()
+{
+#ifndef __LITE_BEAPI__
+	return fLocker.IsLocked();
+#else
+	return fLocker.IsLockedByCurrentThread();
+#endif
 }
 
 
@@ -372,12 +394,20 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 
 BMenu*
-SunPinyinModule::_GenerateMenu() const
+SunPinyinModule::_GenerateMenu()
 {
+	bool shift_key_using = fShiftKeyToSwitch;
+	uint8 page_keys_flags = fPageKeysGroupFlags;
+
+#ifdef GUI_OUT_OF_LOCKING
+	bool locked = IsLocked();
+	if(locked) Unlock();
+#endif
+
 	BMenu *menu = new BMenu(NULL, B_ITEMS_IN_COLUMN);
 
 	BMenuItem *item = new BMenuItem("启用 SHIFT 切换中英文", new BMessage(MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY));
-	if(fShiftKeyToSwitch) item->SetMarked(true);
+	if(shift_key_using) item->SetMarked(true);
 	menu->AddItem(item);
 
 	menu->AddSeparatorItem();
@@ -387,16 +417,20 @@ SunPinyinModule::_GenerateMenu() const
 	menu->AddItem(submenu);
 
 	item = new BMenuItem("启用减号与等号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP1));
-	if(fPageKeysGroupFlags & 0x01) item->SetMarked(true);
+	if(page_keys_flags & 0x01) item->SetMarked(true);
 	submenu->AddItem(item);
 
 	item = new BMenuItem("启用逗号与句号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP2));
-	if(fPageKeysGroupFlags & 0x02) item->SetMarked(true);
+	if(page_keys_flags & 0x02) item->SetMarked(true);
 	submenu->AddItem(item);
 
 	item = new BMenuItem("启用中括号", new BMessage(MSG_MENU_USE_PAGE_KEYS_GROUP3));
-	if(fPageKeysGroupFlags & 0x04) item->SetMarked(true);
+	if(page_keys_flags & 0x04) item->SetMarked(true);
 	submenu->AddItem(item);
+
+#ifdef GUI_OUT_OF_LOCKING
+	if(locked) Lock();
+#endif
 
 	return menu;
 }
@@ -405,11 +439,28 @@ SunPinyinModule::_GenerateMenu() const
 void
 SunPinyinModule::_RegenMenu()
 {
-	delete fMenu;
-	fMenu = _GenerateMenu();
+	BMenu *menu = _GenerateMenu();
+	BMenu *old_menu = fMenu;
+	fMenu = menu;
+
+#ifdef GUI_OUT_OF_LOCKING
+	if(IsLocked())
+	{
+		Unlock();
+		delete old_menu;
+		Lock();
+	}
+#else
+	delete old_menu;
+#endif
 
 	if(fActivated)
+	{
+		// NOTE:
+		// 	SetMenu() convert menu to message by using BMenu::Archive(),
+		// so it's unnecessary to keep it out of locking.
 		SetMenu(fMenu, fMenuHandlerMsgr);
+	}
 }
 
 void

@@ -23,13 +23,14 @@ public:
 
 	// NOTE: The description below came from the ETK++.
 	// Filter():
-	//	In order to use the filter in the appplication which implemented with
+	//	In order to use the filter in the application which implemented with
 	// the same graphics engine, please use asynchronous message (sent without reply)
 	// to notify other threads instead of calling the GUI stuff directly.
 	virtual filter_result		Filter(BMessage *message, BList *outList);
 
 	bool				Lock();
 	void				Unlock();
+	bool				IsLocked();
 
 	// communicate with SunPinyinHandler
 	void				EmptyMessageOutList();
@@ -64,7 +65,7 @@ private:
 
 	BString fErrorInfo;
 
-	BMenu*		_GenerateMenu() const;
+	BMenu*		_GenerateMenu();
 	void		_RegenMenu();
 	status_t	_InitSunPinyin();
 	void		_DeInitSunPinyin();
