@@ -444,14 +444,14 @@ SunPinyinModule::_RegenMenu()
 	fMenu = menu;
 
 #ifdef GUI_OUT_OF_LOCKING
-	if(IsLocked())
-	{
-		Unlock();
-		delete old_menu;
-		Lock();
-	}
-#else
+	bool locked = IsLocked();
+	if(locked) Unlock();
+#endif
+
 	delete old_menu;
+
+#ifdef GUI_OUT_OF_LOCKING
+	if(locked) Lock();
 #endif
 
 	if(fActivated)
