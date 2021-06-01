@@ -61,6 +61,7 @@ SunPinyinModule::SunPinyinModule()
 {
 	bzero(fMessageHandlerMsgrs, COUNT_OF_MESSAGE_HANDLER_MESSENGERS * sizeof(BMessenger*));
 
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	BWindow *win = new SunPinyinStatusWindow();
 	win->Lock();
 #ifdef __LITE_BEAPI__
@@ -79,6 +80,7 @@ SunPinyinModule::SunPinyinModule()
 		return;
 	}
 	win->Unlock();
+#endif // !INPUT_SERVER_MORE_SUPPORT
 
 	// TODO: load config
 
@@ -97,8 +99,12 @@ SunPinyinModule::SunPinyinModule()
 	be_app->Lock();
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 	{
-		BHandler *handler = new SunPinyinMessageHandler(this, fStatusWinMessenger);
+		BHandler *handler = new SunPinyinMessageHandler(this);
 		if(handler == NULL) break;
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
+		handler->SetStatusWindowMessenger(fStatusWinMessenger);
+#endif
 
 		be_app->AddHandler(handler);
 		if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
@@ -161,12 +167,14 @@ SunPinyinModule::~SunPinyinModule()
 		looper->Unlock();
 	}
 
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	if(fStatusWinMessenger.LockTarget())
 	{
 		BLooper *looper = NULL;
 		fStatusWinMessenger.Target(&looper);
 		looper->Quit();
 	}
+#endif
 
 	_DeInitSunPinyin();
 	EmptyMessageOutList();
@@ -374,6 +382,15 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 		EmptyMessageOutList();
 
+#ifdef INPUT_SERVER_MORE_SUPPORT
+		if(byte >= '0' && byte <= '9')
+		{
+			// TODO: best match, expanding, &etc.
+			retVal = B_SKIP_MESSAGE;
+			break;
+		}
+#endif
+
 		// fIMView->onKeyEvent() will call the proper handling of SunPinyinHandler
 		bool used = fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
 
@@ -571,7 +588,11 @@ SunPinyinModule::_InitSunPinyin()
 	factory.setLanguage(CSunpinyinSessionFactory::SIMPLIFIED_CHINESE);
 	factory.setInputStyle(CSunpinyinSessionFactory::CLASSIC_STYLE);
 	factory.setPinyinScheme(CSunpinyinSessionFactory::QUANPIN);
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	factory.setCandiWindowSize(10);
+#else
+	factory.setCandiWindowSize(100);
+#endif
 
 	if((fIMView = factory.createSession()) == NULL ||
 	   fIMView->getIC() == NULL)
@@ -579,11 +600,15 @@ SunPinyinModule::_InitSunPinyin()
 		fErrorInfo << "Failed to initialize fIMView!\n";
 		return B_ERROR;
 	}
-	if((fIMHandler = new SunPinyinHandler(this, fStatusWinMessenger)) == NULL)
+	if((fIMHandler = new SunPinyinHandler(this)) == NULL)
 	{
 		fErrorInfo << "Failed to allocate memory for fIMHandler!\n";
 		return B_NO_MEMORY;
 	}
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
+	fIMHandler->SetStatusWindowMessenger(fStatusWinMessenger);
+#endif
 
 	fIMView->getIC()->setCharsetLevel(1); // GBK
 	fIMView->attachWinHandler(fIMHandler);

@@ -4,6 +4,10 @@
 #include "be-stuff.h"
 #include <sunpinyin.h>
 
+#ifdef __LITE_BEAPI__
+#define INPUT_SERVER_MORE_SUPPORT
+#endif
+
 #define COUNT_OF_MESSAGE_HANDLER_MESSENGERS	2
 
 class _LOCAL SunPinyinHandler;
@@ -49,7 +53,10 @@ private:
 	BMessenger fMenuHandlerMsgr;
 	int32 fCurrentMessageHandlerMsgr;
 	BMessenger *fMessageHandlerMsgrs[COUNT_OF_MESSAGE_HANDLER_MESSENGERS];
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	BMessenger fStatusWinMessenger;
+#endif
 
 	CIMIView *fIMView;
 	SunPinyinHandler *fIMHandler;

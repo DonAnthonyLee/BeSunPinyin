@@ -20,6 +20,8 @@
 #define IME_LOCATION_REPLY_DESC			"etk:location_reply"
 #define IME_HEIGHT_REPLY_DESC			"etk:height_reply"
 #define IME_CONFIRMED_DESC			"etk:confirmed"
+#define IME_STATUS_TAB_DESC			"etk:tab"
+#define IME_STYLE_DESC				"etk:style"
 #define OLD_MODIFIERS_DESC			"etk:old_modifiers"
 #else // !__LITE_BEAPI__
 #include <be/add-ons/input_server/InputServerMethod.h>

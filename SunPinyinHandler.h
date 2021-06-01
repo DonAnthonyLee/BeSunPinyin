@@ -11,7 +11,7 @@
 class _LOCAL SunPinyinHandler : public CIMIWinHandler
 {
 public:
-	SunPinyinHandler(SunPinyinModule *module, const BMessenger &status_msgr);
+	SunPinyinHandler(SunPinyinModule *module);
 	virtual ~SunPinyinHandler();
 
 	virtual void	commit(const TWCHAR* wstr);
@@ -20,30 +20,47 @@ public:
 	virtual void	updateStatus(int key, int value);
 
 	void		Reset();
+#ifndef INPUT_SERVER_MORE_SUPPORT
+	void		SetStatusWindowMessenger(const BMessenger &msgr);
+#endif
 
 private:
 	SunPinyinModule *fModule;
-	bool started_sent;
+	bool fPreeditStartedSent;
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	bool fStatusStartedSent;
+#else
 	BMessenger fStatusWinMessenger;
+#endif
 
-	void		GenerateStartedMessage();
+	void		GeneratePreeditStartedMessage();
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	void		GenerateStatusStartedMessage();
+#endif
 };
 
 
 class _LOCAL SunPinyinMessageHandler : public BHandler
 {
 public:
-	SunPinyinMessageHandler(SunPinyinModule *module, const BMessenger &status_msgr);
+	SunPinyinMessageHandler(SunPinyinModule *module);
 	virtual ~SunPinyinMessageHandler();
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
+	void		SetStatusWindowMessenger(const BMessenger &msgr);
+#endif
 
 	virtual void	MessageReceived(BMessage *msg);
 
 private:
 	SunPinyinModule *fModule;
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	BMessenger fStatusWinMessenger;
+#endif
 };
 
 
+#ifndef INPUT_SERVER_MORE_SUPPORT
 class _LOCAL SunPinyinStatusWindow : public BWindow
 {
 public:
@@ -56,6 +73,7 @@ private:
 	BView *fCandidates;
 	int32 fCaret;
 };
+#endif
 
 #endif /* __SUNPINYIN_BE_HANDLER_H__ */
 

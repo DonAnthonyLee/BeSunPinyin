@@ -60,10 +60,13 @@ static char* utf32_to_utf8(const TWCHAR *wstr)
 }
 
 
-SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module, const BMessenger &status_msgr)
-	: CIMIWinHandler(), fModule(module), started_sent(false), fStatusWinMessenger(status_msgr)
+SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module)
+	: CIMIWinHandler(), fModule(module), fPreeditStartedSent(false)
 {
 	// TODO
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	fStatusStartedSent = false;
+#endif
 }
 
 
@@ -76,27 +79,57 @@ SunPinyinHandler::~SunPinyinHandler()
 void
 SunPinyinHandler::Reset()
 {
-	started_sent = false;
+	fPreeditStartedSent = false;
 
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	fStatusStartedSent = false;
+#else
 	BMessage aMsg(B_INPUT_METHOD_EVENT);
 	aMsg.AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 	fStatusWinMessenger.SendMessage(&aMsg);
+#endif
 }
 
 
+#ifndef INPUT_SERVER_MORE_SUPPORT
 void
-SunPinyinHandler::GenerateStartedMessage()
+SunPinyinHandler::SetStatusWindowMessenger(const BMessenger &msgr)
 {
-	if(started_sent) return;
+	fStatusWinMessenger = msgr;
+}
+#endif
+
+
+void
+SunPinyinHandler::GeneratePreeditStartedMessage()
+{
+	if(fPreeditStartedSent) return;
 
 	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STARTED);
 	msg->AddMessenger(IME_REPLY_DESC, fModule->GetHandlerMessenger());
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	fStatusWinMessenger.SendMessage(msg);
+#endif
 	fModule->AddMessageToOutList(msg);
 
-	started_sent = true;
+	fPreeditStartedSent = true;
 }
+
+
+#ifdef INPUT_SERVER_MORE_SUPPORT
+void
+SunPinyinHandler::GenerateStatusStartedMessage()
+{
+	if(fStatusStartedSent) return;
+
+	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STARTED);
+	fModule->AddMessageToOutList(msg);
+
+	fStatusStartedSent = true;
+}
+#endif
 
 
 void
@@ -104,7 +137,7 @@ SunPinyinHandler::commit(const TWCHAR* wstr)
 {
 	BMessage *msg;
 
-	GenerateStartedMessage();
+	GeneratePreeditStartedMessage();
 
 	char *str = utf32_to_utf8(wstr);
 	if(str)
@@ -152,7 +185,7 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 		return;
 	}
 
-	GenerateStartedMessage();
+	GeneratePreeditStartedMessage();
 
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_CHANGED);
@@ -177,7 +210,7 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 			caret = aStr.Length();
 		}
 
-#ifdef __LITE_BEAPI__
+#ifdef INPUT_SERVER_MORE_SUPPORT
 		msg->AddInt32(IME_SELECTION_DESC, caret);
 		msg->AddInt32(IME_SELECTION_DESC, caret);
 #else
@@ -189,7 +222,9 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 		msg->AddString(IME_STRING_DESC, aStr.String());
 	}
 	msg->AddBool(IME_CONFIRMED_DESC, false);
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	fStatusWinMessenger.SendMessage(msg);
+#endif
 	fModule->AddMessageToOutList(msg);
 }
 
@@ -197,6 +232,7 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 void
 SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 {
+#ifndef INPUT_SERVER_MORE_SUPPORT
 	BString aStr;
 
 	// TODO: do more than simple string
@@ -223,6 +259,56 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_LOCATION_REQUEST);
 		fModule->AddMessageToOutList(msg);
 	}
+#else // INPUT_SERVER_MORE_SUPPORT
+	BMessage *msg;
+
+	if(pcl->size() == 0)
+	{
+		if(fStatusStartedSent)
+		{
+			fStatusStartedSent = false;
+			msg = new BMessage(B_INPUT_METHOD_EVENT);
+			msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
+			fModule->AddMessageToOutList(msg);
+		}
+		return;
+	}
+
+	GenerateStatusStartedMessage();
+
+	BString bestWords;
+	msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
+	msg->AddString(IME_STATUS_TAB_DESC, "待选字词");
+	for(int k = 0; k < pcl->size(); k++)
+	{
+		char *s = utf32_to_utf8(pcl->candiString(k));
+		if(s)
+		{
+			if(pcl->candiType(k) == ICandidateList::BEST_TAIL && bestWords.Length() == 0)
+			{
+				bestWords.SetTo(s);
+			}
+			else
+			{
+				BString aStr;
+				aStr << IME_STATUS_TAB_DESC << ":待选字词";
+				msg->AddString(aStr.String(), s);
+			}
+			free(s);
+		}
+	}
+	fModule->AddMessageToOutList(msg);
+
+	if(bestWords.Length() > 0)
+	{
+		// TODO: style, split and use unicode annoatation if supported, &etc.
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
+		msg->AddString(IME_STRING_DESC, bestWords.String());
+		fModule->AddMessageToOutList(msg);
+	}
+#endif
 }
 
 
@@ -233,8 +319,8 @@ SunPinyinHandler::updateStatus(int key, int value)
 }
 
 
-SunPinyinMessageHandler::SunPinyinMessageHandler(SunPinyinModule *module, const BMessenger &status_msgr)
-	: BHandler(), fModule(module), fStatusWinMessenger(status_msgr)
+SunPinyinMessageHandler::SunPinyinMessageHandler(SunPinyinModule *module)
+	: BHandler(), fModule(module)
 {
 	// TODO
 }
@@ -244,6 +330,15 @@ SunPinyinMessageHandler::~SunPinyinMessageHandler()
 {
 	// TODO
 }
+
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
+void
+SunPinyinMessageHandler::SetStatusWindowMessenger(const BMessenger &msgr)
+{
+	fStatusWinMessenger = msgr;
+}
+#endif
 
 
 void
@@ -264,9 +359,11 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 		// TODO
 		switch(opcode)
 		{
+#ifndef INPUT_SERVER_MORE_SUPPORT
 			case B_INPUT_METHOD_LOCATION_REQUEST:
 				fStatusWinMessenger.SendMessage(msg);
 				break;
+#endif
 
 			case B_INPUT_METHOD_STOPPED:
 				if(fModule->Lock() == false) break;
@@ -302,6 +399,7 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 }
 
 
+#ifndef INPUT_SERVER_MORE_SUPPORT
 SunPinyinStatusWindow::SunPinyinStatusWindow()
 	: BWindow(BRect(0, 0, 100, 30), NULL, B_NO_BORDER_WINDOW_LOOK, B_FLOATING_ALL_WINDOW_FEEL, B_AVOID_FOCUS),
 	  fCaret(-1)
@@ -447,4 +545,5 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 		BWindow::DispatchMessage(msg, target);
 	}
 }
+#endif // !INPUT_SERVER_MORE_SUPPORT
 
