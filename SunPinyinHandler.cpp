@@ -210,7 +210,7 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 			caret = aStr.Length();
 		}
 
-#ifdef INPUT_SERVER_MORE_SUPPORT
+#ifdef __LITE_BEAPI__
 		msg->AddInt32(IME_SELECTION_DESC, caret);
 		msg->AddInt32(IME_SELECTION_DESC, caret);
 #else
@@ -276,38 +276,46 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 
 	GenerateStatusStartedMessage();
 
-	BString bestWords;
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
 	msg->AddString(IME_STATUS_TAB_DESC, "待选字词");
+
+	BString name;
+	name << IME_STATUS_TAB_DESC << ":待选字词:count";
+	msg->AddInt32(name.String(), pcl->total());
+
+	name.Truncate(0);
+	name << IME_STATUS_TAB_DESC << ":待选字词:preferred";
+	// TODO: by config
+	msg->AddInt32(name.String(), 10);
+
+	name.Truncate(0);
+	name << IME_STATUS_TAB_DESC << ":待选字词:offset";
+	msg->AddInt32(name.String(), pcl->first());
+
+	BString bestWords;
+	name.Truncate(0);
+	name << IME_STATUS_TAB_DESC << ":待选字词";
 	for(int k = 0; k < pcl->size(); k++)
 	{
 		char *s = utf32_to_utf8(pcl->candiString(k));
 		if(s)
 		{
 			if(pcl->candiType(k) == ICandidateList::BEST_TAIL && bestWords.Length() == 0)
-			{
 				bestWords.SetTo(s);
-			}
 			else
-			{
-				BString aStr;
-				aStr << IME_STATUS_TAB_DESC << ":待选字词";
-				msg->AddString(aStr.String(), s);
-			}
+				msg->AddString(name.String(), s);
 			free(s);
 		}
 	}
 	fModule->AddMessageToOutList(msg);
 
+	// TODO: style, split and use unicode annoatation if supported, &etc.
+	msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
 	if(bestWords.Length() > 0)
-	{
-		// TODO: style, split and use unicode annoatation if supported, &etc.
-		msg = new BMessage(B_INPUT_METHOD_EVENT);
-		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
 		msg->AddString(IME_STRING_DESC, bestWords.String());
-		fModule->AddMessageToOutList(msg);
-	}
+	fModule->AddMessageToOutList(msg);
 #endif
 }
 

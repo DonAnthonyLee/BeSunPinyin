@@ -99,7 +99,7 @@ SunPinyinModule::SunPinyinModule()
 	be_app->Lock();
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 	{
-		BHandler *handler = new SunPinyinMessageHandler(this);
+		SunPinyinMessageHandler *handler = new SunPinyinMessageHandler(this);
 		if(handler == NULL) break;
 
 #ifndef INPUT_SERVER_MORE_SUPPORT
@@ -591,7 +591,7 @@ SunPinyinModule::_InitSunPinyin()
 #ifndef INPUT_SERVER_MORE_SUPPORT
 	factory.setCandiWindowSize(10);
 #else
-	factory.setCandiWindowSize(100);
+	factory.setCandiWindowSize(101);
 #endif
 
 	if((fIMView = factory.createSession()) == NULL ||
