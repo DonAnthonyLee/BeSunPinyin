@@ -61,7 +61,7 @@ LDFLAGS += $(LIBSUNPINYIN_LIBS)
 ifeq ($(HOST),MINGW32)
 SO_CFLAGS =
 SO_SUFFIX = .dll
-SO_LDFLAGS = -shared -export-dynamic -L. -leime
+SO_LDFLAGS = -shared -L. -leime
 SO_DEPENDS = eime.lib
 else
 SO_CFLAGS = -fPIC
@@ -74,8 +74,8 @@ CFLAGS += $(SO_CFLAGS)
 CXXFLAGS = $(CFLAGS)
 
 SUNPINYIN_OBJECTS =		\
-	SunPinyinHandler.o	\
-	SunPinyinModule.o
+	SunPinyinHandler.lo	\
+	SunPinyinModule.lo
 
 TARGETS =			\
 	SunPinyin$(SO_SUFFIX)
@@ -132,10 +132,10 @@ install:
 
 uninstall:
 
-.SUFFIXES: .c .cpp .o
-.c.o:
+.SUFFIXES: .c .cpp .lo
+.c.lo:
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.cpp.o:
+.cpp.lo:
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
