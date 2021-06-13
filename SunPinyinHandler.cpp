@@ -9,7 +9,7 @@ static char* utf32_to_utf8(const TWCHAR *wstr)
 	if(wstr == NULL || *wstr == 0) return NULL;
 
 	// NOTE: Here we use native conversion instead of iconv
-	int32 uLen = (int32)wcslen((const wchar_t*)wstr);
+	int32 uLen = (int32)WCSLEN(wstr);
 	int32 len = uLen * 6 + 1;
 	char *s = (char*)malloc((size_t)len);
 	if(s)
@@ -197,8 +197,9 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 		msg->AddInt32(IME_CLAUSE_START_DESC, 0);
 		msg->AddInt32(IME_CLAUSE_END_DESC, aStr.Length());
 
+		// NOTE: on Win32, wchar_t is in unicode, not UTF32, so we use the WCSLEN() of SunPinyin
 		int32 caret;
-		size_t len = wcslen((const wchar_t*)wstr);
+		size_t len = WCSLEN(wstr);
 		if(ppd->caret() < (int)len)
 		{
 			caret = 0;
@@ -223,6 +224,7 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 	}
 	msg->AddBool(IME_CONFIRMED_DESC, false);
 #ifndef INPUT_SERVER_MORE_SUPPORT
+	// Notify StatusWindow that the position of caret changed
 	fStatusWinMessenger.SendMessage(msg);
 #endif
 	fModule->AddMessageToOutList(msg);
@@ -271,6 +273,11 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 			msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
 			fModule->AddMessageToOutList(msg);
 		}
+
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
+		fModule->AddMessageToOutList(msg);
+
 		return;
 	}
 
@@ -543,7 +550,7 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					{
 						float w = 0, h = 0;
 						fCandidates->GetPreferredSize(&w, &h);
-						ResizeTo(w + 6, h + 6);
+						ResizeTo(w + 2, h + 2);
 					}
 				}
 		}
