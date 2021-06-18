@@ -95,7 +95,6 @@ SunPinyinModule::SunPinyinModule()
 	if(fEnabled == false)
 		SetIcon(english_icon);
 
-	// NOTE: It's NOT RECOMMENDED to use "SunPinyinStatusWindow" as looper!
 	be_app->Lock();
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 	{
@@ -135,6 +134,9 @@ SunPinyinModule::SunPinyinModule()
 
 SunPinyinModule::~SunPinyinModule()
 {
+	// TODO & FIXME:
+	//	Because our handlers added to "be_app", removing the handlers by locking application
+	// is really BAD IDEA, it will cause dead-lock issue when application quiting.
 	if(!(fMessageHandlerMsgrs[0] == NULL || fMessageHandlerMsgrs[0]->LockTarget() == false))
 	{
 		BLooper *looper = NULL;
@@ -269,9 +271,8 @@ SunPinyinModule::MethodActivated(bool state)
 
 #ifndef __LITE_BEAPI__
 	// NOTE: BeOS won't send stopped message to view anyway.
-	if(state == false)
+	if(state == false && fIMView->getIC()->isEmpty() == false)
 	{
-		// Send stopped message whatever it started
 		BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 		if(EnqueueMessage(msg) != B_OK) delete msg;
@@ -320,7 +321,9 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 					BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 					msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
-					outList->AddItem(msg);
+
+					// we won't skip the current message
+					if(EnqueueMessage(msg) != B_OK) delete msg;
 				}
 				fEnabled = !fEnabled;
 				SetIcon(fEnabled ? logo_icon : english_icon);
@@ -423,7 +426,7 @@ SunPinyinModule::_GenerateMenu()
 
 	BMenu *menu = new BMenu(NULL, B_ITEMS_IN_COLUMN);
 
-	BMenuItem *item = new BMenuItem("启用 SHIFT 切换中英文", new BMessage(MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY));
+	BMenuItem *item = new BMenuItem("启用 SHIFT 键切换中英文", new BMessage(MSG_MENU_SWITCH_EN_CN_BY_SHIFT_KEY));
 	if(shift_key_using) item->SetMarked(true);
 	menu->AddItem(item);
 
@@ -480,6 +483,7 @@ SunPinyinModule::_RegenMenu()
 	}
 }
 
+
 void
 SunPinyinModule::EmptyMessageOutList()
 {
@@ -495,7 +499,7 @@ SunPinyinModule::EmptyMessageOutList()
 void
 SunPinyinModule::AddMessageToOutList(BMessage *msg)
 {
-	if(fMessageOutList.AddItem((void*)msg) == false && msg != NULL) delete msg;
+	if(fMessageOutList.AddItem(msg) == false && msg != NULL) delete msg;
 }
 
 
@@ -611,6 +615,12 @@ SunPinyinModule::_InitSunPinyin()
 #endif
 
 	fIMView->getIC()->setCharsetLevel(1); // GBK
+
+#if 0
+	fIMView->getIC()->setUserDict(NULL); // no user dict
+	fIMView->getIC()->setHistoryMemory(NULL); // no history
+#endif
+
 	fIMView->attachWinHandler(fIMHandler);
 
 	CHotkeyProfile *profile = fIMView->getHotkeyProfile();
