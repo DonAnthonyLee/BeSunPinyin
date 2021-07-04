@@ -95,26 +95,28 @@ SunPinyinModule::SunPinyinModule()
 	if(fEnabled == false)
 		SetIcon(english_icon);
 
-	be_app->Lock();
+	BLooper *looper = new BLooper();
+	looper->Lock();
+	looper->Run();
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
 	{
 		SunPinyinMessageHandler *handler = new SunPinyinMessageHandler(this);
-		if(handler == NULL) break;
+		if(handler == NULL) goto ErrorExit;
 
 #ifndef INPUT_SERVER_MORE_SUPPORT
 		handler->SetStatusWindowMessenger(fStatusWinMessenger);
 #endif
 
-		be_app->AddHandler(handler);
+		looper->AddHandler(handler);
 		if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
 		{
 			fMessageHandlerMsgrs[k] = new BMessenger(handler);
 			if(fMessageHandlerMsgrs[k] == NULL || fMessageHandlerMsgrs[k]->IsValid() == false)
 			{
 				fErrorInfo << "Failed to initialize fMessageHandlerMsgrs[" << k << "]!\n";
-				be_app->RemoveHandler(handler);
+				looper->RemoveHandler(handler);
 				delete handler;
-				break;
+				goto ErrorExit;
 			}
 		}
 		else
@@ -123,59 +125,34 @@ SunPinyinModule::SunPinyinModule()
 			if(fMenuHandlerMsgr.IsValid() == false)
 			{
 				fErrorInfo << "Failed to initialize fMenuHandlerMsg!\n";
-				be_app->RemoveHandler(handler);
+				looper->RemoveHandler(handler);
 				delete handler;
+				goto ErrorExit;
 			}
 		}
 	}
-	be_app->Unlock();
+
+	looper->Unlock();
+	return;
+
+ErrorExit:
+	// NOTE: it's unnecessary to remove handlers created.
+	looper->Quit();
 }
 
 
 SunPinyinModule::~SunPinyinModule()
 {
-	// TODO & FIXME:
-	//	Because our handlers added to "be_app", removing the handlers by locking application
-	// is really BAD IDEA, it will cause dead-lock issue when application quiting.
-	if(!(fMessageHandlerMsgrs[0] == NULL || fMessageHandlerMsgrs[0]->LockTarget() == false))
+	// send B_QUIT_REQUESTED to menu message handler, the message will be passed to it's looper
+	while(fMenuHandlerMsgr.IsValid())
 	{
-		BLooper *looper = NULL;
-		fMessageHandlerMsgrs[0]->Target(&looper);
-
-		for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS + 1; k++)
-		{
-			BHandler *handler;
-
-			if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
-			{
-				if(fMessageHandlerMsgrs[k] == NULL) break;
-				handler = fMessageHandlerMsgrs[k]->Target(NULL);
-			}
-			else
-			{
-				handler = fMenuHandlerMsgr.Target(NULL);
-			}
-
-			if(handler)
-			{
-				looper->RemoveHandler(handler);
-				delete handler;
-			}
-
-			if(k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS)
-				delete fMessageHandlerMsgrs[k];
-		}
-
-		looper->Unlock();
+		if(fMenuHandlerMsgr.SendMessage(B_QUIT_REQUESTED) != B_OK) break;
+		snooze(200000);
 	}
 
 #ifndef INPUT_SERVER_MORE_SUPPORT
-	if(fStatusWinMessenger.LockTarget())
-	{
-		BLooper *looper = NULL;
-		fStatusWinMessenger.Target(&looper);
-		looper->Quit();
-	}
+	// NOTE: status window handling by message, so we just send B_QUIT_REQUESTED
+	fStatusWinMessenger.SendMessage(B_QUIT_REQUESTED);
 #endif
 
 	_DeInitSunPinyin();
@@ -255,6 +232,10 @@ SunPinyinModule::InitCheck()
 status_t
 SunPinyinModule::MethodActivated(bool state)
 {
+#ifndef __LITE_BEAPI__
+	bool send_stopped_msg = false;
+#endif
+
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
 	// we should lock itself before doing anything.
@@ -263,15 +244,22 @@ SunPinyinModule::MethodActivated(bool state)
 	// TODO: menu, icon, &etc.
 	SetMenu((state ? fMenu : NULL), fMenuHandlerMsgr);
 	if(state == false)
+	{
+#ifndef __LITE_BEAPI__
+		// NOTE: BeOS won't send stopped message to view anyway.
+		if(fIMView->getIC()->isEmpty() == false)
+			send_stopped_msg = true;
+#endif
+
 		ResetSunPinyin();
+	}
 
 	fActivated = state;
 
 	Unlock();
 
 #ifndef __LITE_BEAPI__
-	// NOTE: BeOS won't send stopped message to view anyway.
-	if(state == false && fIMView->getIC()->isEmpty() == false)
+	if(send_stopped_msg)
 	{
 		BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
