@@ -150,6 +150,12 @@ SunPinyinModule::~SunPinyinModule()
 		snooze(200000);
 	}
 
+	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
+	{
+		if(fMessageHandlerMsgrs[k] != NULL)
+			delete fMessageHandlerMsgrs[k];
+	}
+
 #ifndef INPUT_SERVER_MORE_SUPPORT
 	// NOTE: status window handling by message, so we just send B_QUIT_REQUESTED
 	fStatusWinMessenger.SendMessage(B_QUIT_REQUESTED);
