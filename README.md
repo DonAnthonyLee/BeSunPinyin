@@ -54,7 +54,7 @@ You will need XIM/Wayland/TSF or any other implementation of EIME to build BeSun
 
 Copy the file named "SunPinyin.so" to add-ons directory (like /boot/home/config/add-ons/input_server/methods/) of input server, then restart input server or system.
 
-*Note: Copy the file /boot/home/config/non-packaged/add-ons/input_server/methods/ when using HaikuOS without creating .hpkg.*
+*Note: Copy the file to /boot/home/config/non-packaged/add-ons/input_server/methods/ when using HaikuOS without creating .hpkg.*
 
 If anything blocked booting, you can press the SPACE when booting and select "Disable user add-ons" to disable it.
 
@@ -62,6 +62,6 @@ If anything blocked booting, you can press the SPACE when booting and select "Di
 
 Copy the file named "SunPinyin.so" or "SunPinyin.dll" to "addons" directory of EIME, then restart the implementation of EIME.
 
-*Note: You can copy the files named "libsunpinyin.dll" and "libsqlite3.dll" the the same directory contains "eime.dll" when using Windows.*
+*Note: You can copy the files named "libsunpinyin.dll" and "libsqlite3.dll" to the the same directory contains "eime.dll" when using Windows.*
 
 
