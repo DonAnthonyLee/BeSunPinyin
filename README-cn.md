@@ -34,9 +34,9 @@
 
 + BeOS/HaikuOS
 
-将编译后的 SunPinyin.so 复制至 input_server 的 add-ons 目录 (建议采用 /boot/home/config/add-ons/input_server/method )，然后重新启动 input_server（或重新启动系统）。
+将编译后的 SunPinyin.so 复制至 input_server 的 add-ons 目录 (建议采用 /boot/home/config/add-ons/input_server/methods )，然后重新启动 input_server（或重新启动系统）。
 
-*注：HaikuOS 采用手动方式（即未制作 hpkg），建议复制至 /boot/home/config/non-packaged/add-ons/input_server/method 。 *
+*注：HaikuOS 采用手动方式（即未制作 hpkg），建议复制至 /boot/home/config/non-packaged/add-ons/input_server/methods*
 
 若遇启动异常，可于启动时按动空格键并禁用 user add-ons 即可。
 
