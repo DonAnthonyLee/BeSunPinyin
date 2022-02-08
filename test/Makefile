@@ -48,8 +48,13 @@ ifeq ($(HOST),MINGW32)
 PREFIX := /MinGW
 PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
 else
+ifeq ($(HOST),Darwin)
+#PREFIX := /usr/local
+#PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+else
 PREFIX := /usr
 PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+endif
 endif
 endif
 
@@ -59,7 +64,7 @@ LD := $(CROSS_COMPILE)ld
 LITE_BEAPI_CONFIG := $(CROSS_COMPILE)lite-beapi-config
 PKG_CONFIG := $(CROSS_COMPILE)pkg-config
 
-CFLAGS = $(DEBUG_OPTIONS) $(OPTIMIZE)
+CFLAGS = $(DEBUG_OPTIONS) $(OPTIMIZE) $(CPPFLAGS)
 ifeq ($(IS_BEOS_PLATFORM),1)
 CFLAGS += -Wno-multichar
 LDFLAGS += -lbe -lroot -ltextencoding

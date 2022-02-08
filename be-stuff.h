@@ -4,7 +4,7 @@
 #include <be/Be.h>
 
 #ifdef __LITE_BEAPI__
-#include <etkxx/etk/add-ons/input/InputServerMethod.h>
+#include <etk/add-ons/input/InputServerMethod.h>
 #define BInputServerMethod			EInputServerMethod
 #define B_INPUT_METHOD_EVENT			E_INPUT_METHOD_EVENT
 #define B_INPUT_METHOD_STARTED			E_INPUT_METHOD_STARTED

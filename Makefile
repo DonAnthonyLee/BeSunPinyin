@@ -27,8 +27,13 @@ ifeq ($(HOST),MINGW32)
 PREFIX := /MinGW
 PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
 else
+ifeq ($(HOST),Darwin)
+#PREFIX := /usr/local
+#PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+else
 PREFIX := /usr
 PKG_CONFIG_PATH := $(PREFIX)/lib/pkgconfig
+endif
 endif
 endif
 
@@ -44,7 +49,7 @@ TOPSRCDIR = $(shell pwd)
 EXTRA_CFLAGS = -I $(TOPSRCDIR)
 EXTRA_LDFLAGS =
 
-CFLAGS = $(DEBUG_OPTIONS) $(OPTIMIZE) $(EXTRA_CFLAGS)
+CFLAGS = $(DEBUG_OPTIONS) $(OPTIMIZE) $(EXTRA_CFLAGS) $(CPPFLAGS)
 ifeq ($(IS_BEOS_PLATFORM),1)
 CFLAGS += -Wno-multichar
 LDFLAGS += -lbe -lroot -ltextencoding
@@ -64,10 +69,17 @@ SO_SUFFIX = .dll
 SO_LDFLAGS = -shared -L. -leime
 SO_DEPENDS = eime.lib
 else
+ifeq ($(HOST),Darwin)
+SO_CFLAGS =
+SO_SUFFIX = .dylib
+SO_LDFLAGS = -shared -L. -leime
+SO_DEPENDS = libeime.dylib
+else
 SO_CFLAGS = -fPIC
 SO_SUFFIX = .so
 SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
 SO_DEPENDS = _APP_
+endif
 endif
 
 CFLAGS += $(SO_CFLAGS)
