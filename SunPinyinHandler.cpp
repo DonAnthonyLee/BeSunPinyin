@@ -408,10 +408,6 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 			fModule->Unlock();
 			break;
 
-		case B_QUIT_REQUESTED:
-			Looper()->PostMessage(B_QUIT_REQUESTED);
-			break;
-
 		default:
 			break;
 	}

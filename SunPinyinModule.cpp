@@ -143,23 +143,27 @@ ErrorExit:
 
 SunPinyinModule::~SunPinyinModule()
 {
-	// send B_QUIT_REQUESTED to menu message handler, the message will be passed to it's looper
-	while(fMenuHandlerMsgr.IsValid())
+	if(fMenuHandlerMsgr.LockTarget())
 	{
-		if(fMenuHandlerMsgr.SendMessage(B_QUIT_REQUESTED) != B_OK) break;
-		snooze(200000);
+		BLooper *looper = NULL;
+		fMenuHandlerMsgr.Target(&looper);
+		looper->Quit();
 	}
+
+#ifndef INPUT_SERVER_MORE_SUPPORT
+	if(fStatusWinMessenger.LockTarget())
+	{
+		BLooper *looper = NULL;
+		fStatusWinMessenger.Target(&looper);
+		looper->Quit();
+	}
+#endif
 
 	for(int k = 0; k < COUNT_OF_MESSAGE_HANDLER_MESSENGERS; k++)
 	{
 		if(fMessageHandlerMsgrs[k] != NULL)
 			delete fMessageHandlerMsgrs[k];
 	}
-
-#ifndef INPUT_SERVER_MORE_SUPPORT
-	// NOTE: status window handling by message, so we just send B_QUIT_REQUESTED
-	fStatusWinMessenger.SendMessage(B_QUIT_REQUESTED);
-#endif
 
 	_DeInitSunPinyin();
 	EmptyMessageOutList();
