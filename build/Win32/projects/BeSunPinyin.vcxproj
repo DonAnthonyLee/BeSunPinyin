@@ -1,0 +1,298 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{d2ff7a7f-206d-4910-b176-f0075aa19a7f}</ProjectGuid>
+    <RootNamespace>BeSunPinyin</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectName>BeSunPinyin</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">x86\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">x86\$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">x86\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">x86\$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">BeSunPinyin</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">BeSunPinyin</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">BeSunPinyin</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">BeSunPinyin</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>$(OutDir)../../../../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <HeaderFileName>%(Filename)_h.h</HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\etkxx;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\LiteBeAPI;$(SolutionDir)..\..\libs\sqlite-build;$(SolutionDir)..\..\libs\sunpinyin\src;$(SolutionDir)..\..\libs\sunpinyin\src\ime-core;$(SolutionDir)..\..\libs\sunpinyin\src\lexicon;$(SolutionDir)..\..\libs\sunpinyin\src\pinyin;$(SolutionDir)..\..\libs\sunpinyin\src\slm;$(SolutionDir)..\..\libs\sunpinyin\src\slm\getwordfreq;$(SolutionDir)..\..\libs\sunpinyin\src\slm\ids2ngram;$(SolutionDir)..\..\libs\sunpinyin\src\slm\mmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmbuild;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slminfo;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmpack;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmprune;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\thread;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tools;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslmendian;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslminfo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE=1;ETK_ENABLE_DEBUG;HAVE_LOG2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>false</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>
+      </PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14\Debug;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x86\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrt.lib</IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)BeSunPinyin.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
+      <CLRImageType>ForceIJWImage</CLRImageType>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>$(OutDir)../../../../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\etkxx;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\LiteBeAPI;$(SolutionDir)..\..\libs\sqlite-build;$(SolutionDir)..\..\libs\sunpinyin\src;$(SolutionDir)..\..\libs\sunpinyin\src\ime-core;$(SolutionDir)..\..\libs\sunpinyin\src\lexicon;$(SolutionDir)..\..\libs\sunpinyin\src\pinyin;$(SolutionDir)..\..\libs\sunpinyin\src\slm;$(SolutionDir)..\..\libs\sunpinyin\src\slm\getwordfreq;$(SolutionDir)..\..\libs\sunpinyin\src\slm\ids2ngram;$(SolutionDir)..\..\libs\sunpinyin\src\slm\mmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmbuild;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slminfo;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmpack;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmprune;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\thread;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tools;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslmendian;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslminfo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE=1;ETK_DISABLE_MORE_CHECKS;ETK_DISABLE_CHECKS;HAVE_LOG2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>
+      </PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)BeSunPinyin.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
+      <CLRImageType>ForceIJWImage</CLRImageType>
+      <IgnoreSpecificDefaultLibraries>libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrtd.lib</IgnoreSpecificDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>$(OutDir)../../../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TargetEnvironment>X64</TargetEnvironment>
+      <HeaderFileName>%(Filename)_h.h</HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\etkxx;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\LiteBeAPI;$(SolutionDir)..\..\libs\sqlite-build;$(SolutionDir)..\..\libs\sunpinyin\src;$(SolutionDir)..\..\libs\sunpinyin\src\ime-core;$(SolutionDir)..\..\libs\sunpinyin\src\lexicon;$(SolutionDir)..\..\libs\sunpinyin\src\pinyin;$(SolutionDir)..\..\libs\sunpinyin\src\slm;$(SolutionDir)..\..\libs\sunpinyin\src\slm\getwordfreq;$(SolutionDir)..\..\libs\sunpinyin\src\slm\ids2ngram;$(SolutionDir)..\..\libs\sunpinyin\src\slm\mmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmbuild;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slminfo;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmpack;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmprune;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\thread;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tools;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslmendian;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslminfo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE=1;ETK_ENABLE_DEBUG;HAVE_LOG2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>false</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>
+      </PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14-x64\Debug;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrt.lib</IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)BeSunPinyin.lib</ImportLibrary>
+      <TargetMachine>MachineX64</TargetMachine>
+      <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
+      <CLRImageType>ForceIJWImage</CLRImageType>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>$(OutDir)../../../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\etkxx;$(SolutionDir)..\..\libs\etkxx-win32\MinGW\include\LiteBeAPI;$(SolutionDir)..\..\libs\sqlite-build;$(SolutionDir)..\..\libs\sunpinyin\src;$(SolutionDir)..\..\libs\sunpinyin\src\ime-core;$(SolutionDir)..\..\libs\sunpinyin\src\lexicon;$(SolutionDir)..\..\libs\sunpinyin\src\pinyin;$(SolutionDir)..\..\libs\sunpinyin\src\slm;$(SolutionDir)..\..\libs\sunpinyin\src\slm\getwordfreq;$(SolutionDir)..\..\libs\sunpinyin\src\slm\ids2ngram;$(SolutionDir)..\..\libs\sunpinyin\src\slm\mmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmbuild;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slminfo;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmpack;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmprune;$(SolutionDir)..\..\libs\sunpinyin\src\slm\slmseg;$(SolutionDir)..\..\libs\sunpinyin\src\slm\thread;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tools;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslmendian;$(SolutionDir)..\..\libs\sunpinyin\src\slm\tslminfo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE=1;ETK_DISABLE_MORE_CHECKS;ETK_DISABLE_CHECKS;HAVE_LOG2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>
+      </PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14-x64\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)BeSunPinyin.lib</ImportLibrary>
+      <TargetMachine>MachineX64</TargetMachine>
+      <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
+      <CLRImageType>ForceIJWImage</CLRImageType>
+      <IgnoreSpecificDefaultLibraries>libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrtd.lib</IgnoreSpecificDefaultLibraries>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include=".\SunPinyinHandler-VC.cpp" />
+    <ClCompile Include=".\SunPinyinModule-VC.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\SunPinyinHandler.h" />
+    <ClCompile Include="..\..\..\SunPinyinModule.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
