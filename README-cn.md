@@ -17,9 +17,9 @@
 
 + HaikuOS 系统
 
-1. 通过 HaikuDepot 安装 libsunpinyin 及 libsunpinyin_devel；
+1.1. 通过 HaikuDepot 安装 libsunpinyin 及 libsunpinyin_devel；
 
-2. 运行脚本 "utils/gen-sunpinyin-data-hpkg.sh"，安装其所生成安装包。
+1.2. 运行脚本 "utils/gen-sunpinyin-data-hpkg.sh"，安装其所生成安装包。
 
 *注: 当前 HaikuDepot 所提供 libsunpinyin 可能无法正常工作，请重新使用 sunpinyin 仓库源码并运行以下指令重新编译 libsunpinyin.so.3 :*
 
