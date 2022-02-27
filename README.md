@@ -16,9 +16,9 @@ sudo apt-get install libsunpinyin-dev sunpinyin-data
 
 + HaikuOS
 
-1. Install libsunpinyin & libsunpinyin_devel by HaikuDepot;
+1.1. Install libsunpinyin & libsunpinyin_devel by HaikuDepot;
 
-2. Run the script located at "utils/gen-sunpinyin-data-hpkg.sh", then install the package.
+1.2. Run the script located at "utils/gen-sunpinyin-data-hpkg.sh", then install the package.
 
 *Note: The current "libsunpinyin" package provided by HaikuDepot might can't work properly, you might need to recompile libsunpinyin.so.3 with the following command from sunpinyin's sources :*
 
@@ -50,7 +50,7 @@ See [the repository](https://github.com/DonAnthonyLee/etkxx-devel-binary) for mo
 
 + BeOS/HaikuOS
 
-When you run "make" to build BeSunPinyin, it will link to the "input_server" of system automatically.
+When you run "make" to build BeSunPinyin, it will link against the "input_server" of system automatically.
 
 
 + Other platforms
