@@ -28,9 +28,6 @@ scons --prefix=/boot/system
 ```
 
 
-可通过 HaikuDepot 安装 libsunpinyin（尚未确定）
-
-
 + Windows 系统
 
 可关注 [此仓库](https://github.com/DonAnthonyLee/sunpinyin/) （目前未发布，可自行编译）
