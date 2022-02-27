@@ -1,0 +1,25 @@
+name			sunpinyin_data
+version			0.1.22-2
+architecture		any
+summary			"sunpinyin-data"
+description		" "
+packager		" "
+vendor			" "
+
+#FIXME: no "Creative Commons License" under /boot/system/data/license
+licenses			"MIT"
+
+urls {
+	"https://github.com/sunpinyin/open-gram"
+}
+
+provides {
+	sunpinyin_data=0.1.22-2
+}
+
+copyrights {
+	"Copyright: (c) 1997-2010, MDBG"
+	"Copyright: (c) 2010, Kov Chai <tchaikov@gmail.com>"
+	"Copyright: (c) 2010 virus huo <virushuo@gmail.com>"
+	"Copyright: (c) 2010 Tinyfool <tinyfool@gmail.com>"
+}

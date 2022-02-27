@@ -11,16 +11,25 @@ It's an input method add-on developing for EIME/BeOS/HaikuOS using libsunpinyin-
 
 Run commands below to install libsunpinyin.
 ```bash
-sudo apt-get install libsunpinyin-dev
+sudo apt-get install libsunpinyin-dev sunpinyin-data
 ```
 
 + HaikuOS
 
-Install libsunpinyin (not sure yet) by HaikuDepot.
+1. Install libsunpinyin & libsunpinyin_devel by HaikuDepot;
+
+2. Run the script located at "utils/gen-sunpinyin-data-hpkg.sh", then install the package.
+
+*Note: The current "libsunpinyin" package provided by HaikuDepot might can't work properly, you might need to recompile libsunpinyin.so.3 with the following command from sunpinyin's sources :*
+
+```bash
+scons --prefix=/boot/system
+```
 
 + Windows
 
 See [the repository](https://github.com/DonAnthonyLee/sunpinyin/) for more detail (No package released yet).
+
 
 **2. Lite BeAPI**
 
@@ -28,11 +37,14 @@ See [the repository](https://github.com/DonAnthonyLee/sunpinyin/) for more detai
 
 Most of the sources written in native BeOS API, so BeSunPinyin don't rely on this when building on BeOS/HaikuOS.
 
+
 + Other platforms
 
 See [the repository](https://github.com/DonAnthonyLee/etkxx-devel-binary) for more detail.
 
 *Note: For the time being writing this, it's still WIP for improving.*
+
+
 
 **3. EIME or input_server**
 
@@ -57,6 +69,7 @@ Copy the file named "SunPinyin.so" to add-ons directory (like /boot/home/config/
 *Note: Copy the file to /boot/home/config/non-packaged/add-ons/input_server/methods/ when using HaikuOS without creating .hpkg.*
 
 If anything blocked booting, you can press the SPACE when booting and select "Disable user add-ons" to disable it.
+
 
 + Other platforms
 

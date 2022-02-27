@@ -10,9 +10,31 @@
 ## 依赖项
 **1. libsunpinyin**
 
-+ Ubuntu Linux 系统可通过 apt-get install libsunpinyin-dev 安装
-+ HaikuOS 系统可通过 HaikuDepot 安装 libsunpinyin（尚未确定）
-+ Windows 系统可关注 [此仓库](https://github.com/DonAnthonyLee/sunpinyin/) （目前未发布，可自行编译）
++ Ubuntu Linux 系统
+
+可通过 apt-get install libsunpinyin-dev 安装
+
+
++ HaikuOS 系统
+
+1. 通过 HaikuDepot 安装 libsunpinyin 及 libsunpinyin_devel；
+
+2. 运行脚本 "utils/gen-sunpinyin-data-hpkg.sh"，安装其所生成安装包。
+
+*注: 当前 HaikuDepot 所提供 libsunpinyin 可能无法正常工作，请重新使用 sunpinyin 仓库源码并运行以下指令重新编译 libsunpinyin.so.3 :*
+
+```bash
+scons --prefix=/boot/system
+```
+
+
+可通过 HaikuDepot 安装 libsunpinyin（尚未确定）
+
+
++ Windows 系统
+
+可关注 [此仓库](https://github.com/DonAnthonyLee/sunpinyin/) （目前未发布，可自行编译）
+
 
 **2. Lite BeAPI**
 
@@ -22,6 +44,7 @@
 
 *注：目前发布版本仅为 Windows 平台版本（头文件除了 ETKBuild.h 之外所有平台通用），其改进正处于 WIP 。*
 
+
 **3. EIME 或 input_server**
 
 在 BeOS/HaikuOS 系统中将在运行 make 进行编译时自动链接系统自身的 input_server。
@@ -29,6 +52,7 @@
 其它系统中将依赖 EIME/EIME-XIM/EIME-WL/EIME-TSF 等等，具体可关注 [老李的杂货铺](https://donanthonylee.github.io) 。
 
 *注：目前 EIME 各平台相应开发与 ETK++ 改进正在同步进行中，暂未发布开发库。*
+
 
 ## 编译后如何启用
 
@@ -40,9 +64,10 @@
 
 若遇启动异常，可于启动时按动空格键并禁用 user add-ons 即可。
 
+
 + 其它平台
 
-将编译后的 SunPinyin.so 或 SunPinyin.dll 复制至 EIME 的 addons 目录下，然后重新启动相关实现。
+将编译后的 SunPinyin.so 或 SunPinyin.dll 等复制至 EIME 的 addons 目录下，然后重新启动相关实现。
 
 *注：Windows 平台可将 libsunpinyin.dll 及 libsqlite3.dll 等依赖运行时文件复制到 eime.dll 所在目录。*
 
