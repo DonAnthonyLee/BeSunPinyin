@@ -66,14 +66,12 @@ LDFLAGS += $(LIBSUNPINYIN_LIBS)
 ifeq ($(HOST),MINGW32)
 SO_CFLAGS =
 SO_SUFFIX = .dll
-SO_LDFLAGS = -shared -L. -leime
-SO_DEPENDS = eime.lib
+SO_LDFLAGS = -shared -leime
 else
 ifeq ($(HOST),Darwin)
 SO_CFLAGS =
 SO_SUFFIX = .dylib
-SO_LDFLAGS = -shared -L. -leime
-SO_DEPENDS = libeime.dylib
+SO_LDFLAGS = -shared -leime
 else
 SO_CFLAGS = -fPIC
 SO_SUFFIX = .so

@@ -121,7 +121,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
+      <AdditionalDependencies>libsunpinyin.lib;eime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14\Debug;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x86\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -168,7 +168,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>libsunpinyin.lib;eime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -215,7 +215,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
+      <AdditionalDependencies>libsunpinyin.lib;eime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrtd.lib</AdditionalDependencies>
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14-x64\Debug;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -263,7 +263,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libsunpinyin.lib;libeime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
+      <AdditionalDependencies>libsunpinyin.lib;eime.lib;etkxx.lib;kernel32.lib;user32.lib;msvcrt.lib</AdditionalDependencies>
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14-x64\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
