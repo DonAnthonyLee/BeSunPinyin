@@ -495,6 +495,18 @@ SunPinyinModule::EmptyMessageOutList()
 
 
 void
+SunPinyinModule::EnqueueMessageOutList()
+{
+	for(int32 k = 0; k < fMessageOutList.CountItems(); k++)
+	{
+		BMessage *msg = (BMessage*)fMessageOutList.ItemAt(k);
+		if(msg != NULL) EnqueueMessage(msg);
+	}
+	fMessageOutList.MakeEmpty();
+}
+
+
+void
 SunPinyinModule::AddMessageToOutList(BMessage *msg)
 {
 	if(fMessageOutList.AddItem(msg) == false && msg != NULL) delete msg;
@@ -593,7 +605,7 @@ SunPinyinModule::_InitSunPinyin()
 #ifndef INPUT_SERVER_MORE_SUPPORT
 	factory.setCandiWindowSize(10);
 #else
-	factory.setCandiWindowSize(101);
+	factory.setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
 #endif
 
 	if((fIMView = factory.createSession()) == NULL ||
@@ -658,6 +670,13 @@ SunPinyinModule::_DeInitSunPinyin()
 		CSunpinyinSessionFactory::getFactory().destroySession(fIMView);
 	if(fIMHandler)
 		delete fIMHandler;
+}
+
+
+SunPinyinHandler*
+SunPinyinModule::IMHandler()
+{
+	return fIMHandler;
 }
 
 

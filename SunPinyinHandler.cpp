@@ -65,7 +65,14 @@ SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module)
 {
 	// TODO
 #ifdef INPUT_SERVER_MORE_SUPPORT
-	fStatusStartedSent = false;
+	fStatusResponded = false;
+	fStatusMaxRows = 1;
+	fStatusMaxColumns = 10;
+	fStatusSupports = 0;
+	fCandidates = NULL;
+	fCandidatesOffset = 0;
+	fCandidatesRows =  1;
+	fCandidatesSelection = -1;
 #endif
 }
 
@@ -82,7 +89,10 @@ SunPinyinHandler::Reset()
 	fPreeditStartedSent = false;
 
 #ifdef INPUT_SERVER_MORE_SUPPORT
-	fStatusStartedSent = false;
+	fStatusResponded = false;
+	fCandidates = NULL;
+	fCandidatesOffset = 0;
+	fCandidatesSelection = -1;
 #else
 	BMessage aMsg(B_INPUT_METHOD_EVENT);
 	aMsg.AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
@@ -97,7 +107,72 @@ SunPinyinHandler::SetStatusWindowMessenger(const BMessenger &msgr)
 {
 	fStatusWinMessenger = msgr;
 }
-#endif
+#else // INPUT_SERVER_MORE_SUPPORT
+void
+SunPinyinHandler::StatusResponded(const BMessage *msg)
+{
+	int32 action;
+	if(msg->FindInt32("action", &action) != B_OK) return;
+
+	switch(action)
+	{
+		case E_INPUT_METHOD_STATUS_CONFIG:
+			msg->FindInt32("max_rows", &fStatusMaxRows);
+			if(fStatusMaxRows > STATUS_MAX_ROWS)
+				fStatusMaxRows = STATUS_MAX_ROWS;
+			msg->FindInt32("max_columns", &fStatusMaxColumns);
+			if(fStatusMaxColumns > STATUS_MAX_COLUMNS)
+				fStatusMaxColumns = STATUS_MAX_COLUMNS;
+			msg->FindInt32("supports", &fStatusSupports);
+			fStatusResponded = true;
+			if(fCandidates != NULL)
+			{
+				updateCandidates(fCandidates);
+				fModule->EnqueueMessageOutList();
+			}
+			break;
+
+		case E_INPUT_METHOD_STATUS_CONFIRM_STRING:
+			// TODO
+			break;
+
+		case E_INPUT_METHOD_STATUS_FOCUS_CHANGED:
+			// TODO
+			break;
+
+		case E_INPUT_METHOD_STATUS_SHIFT_REQUEST:
+			// TODO
+			break;
+
+		case E_INPUT_METHOD_STATUS_TIPS_HIDDEN:
+			// TODO
+			break;
+
+		default:
+			break;
+	}
+}
+
+void
+SunPinyinHandler::LocationReplied(const BMessage *msg)
+{
+	BPoint where;
+	float h;
+
+	fSpecificArea = BRect();
+
+	for(int32 k = 0;
+	    (msg->FindPoint(IME_LOCATION_REPLY_DESC, k, &where) == B_OK &&
+	     msg->FindFloat(IME_HEIGHT_REPLY_DESC, k, &h) == B_OK);
+	    k++)
+	{
+		BRect r;
+		r.SetLeftBottom(where);
+		r.SetRightTop(where + BPoint(h, h));
+		fSpecificArea |= r;
+	}
+}
+#endif // !INPUT_SERVER_MORE_SUPPORT
 
 
 void
@@ -114,6 +189,10 @@ SunPinyinHandler::GeneratePreeditStartedMessage()
 	fModule->AddMessageToOutList(msg);
 
 	fPreeditStartedSent = true;
+
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	GenerateStatusStartedMessage();
+#endif
 }
 
 
@@ -121,13 +200,13 @@ SunPinyinHandler::GeneratePreeditStartedMessage()
 void
 SunPinyinHandler::GenerateStatusStartedMessage()
 {
-	if(fStatusStartedSent) return;
+	if(fStatusResponded) return;
 
 	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STARTED);
+	msg->AddMessenger(IME_REPLY_DESC, fModule->CurrentHandlerMessenger());
+	//msg->AddString("tab_label", "待选字词");
 	fModule->AddMessageToOutList(msg);
-
-	fStatusStartedSent = true;
 }
 #endif
 
@@ -153,6 +232,12 @@ SunPinyinHandler::commit(const TWCHAR* wstr)
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 	fModule->AddMessageToOutList(msg);
+
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
+	fModule->AddMessageToOutList(msg);
+#endif
 
 	Reset();
 }
@@ -180,6 +265,12 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 		fModule->AddMessageToOutList(msg);
+
+#ifdef INPUT_SERVER_MORE_SUPPORT
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
+		fModule->AddMessageToOutList(msg);
+#endif
 
 		Reset();
 		return;
@@ -238,9 +329,9 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	BString aStr;
 
 	// TODO: do more than simple string
-	for(int k = 0; k < min_c(pcl->size(), 10); k++)
+	for(int k = 0; k < min_c(pcl->total() - pcl->first(), 10); k++)
 	{
-		char *s = utf32_to_utf8(pcl->candiString(k));
+		char *s = utf32_to_utf8(pcl->candiString(k + pcl->first()));
 		if(s)
 		{
 			if(aStr.Length() > 0) aStr << "  ";
@@ -264,65 +355,99 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 #else // INPUT_SERVER_MORE_SUPPORT
 	BMessage *msg;
 
-	if(pcl->size() == 0)
+	if(pcl->total() == 0 || pcl->first() >= pcl->total())
 	{
-		if(fStatusStartedSent)
+		if(fStatusResponded)
 		{
-			fStatusStartedSent = false;
+			fStatusResponded = false;
+			fCandidates = NULL;
+			fCandidatesOffset = 0;
+			fCandidatesSelection = -1;
+
 			msg = new BMessage(B_INPUT_METHOD_EVENT);
 			msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
 			fModule->AddMessageToOutList(msg);
 		}
 
-		msg = new BMessage(B_INPUT_METHOD_EVENT);
-		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
-		fModule->AddMessageToOutList(msg);
-
 		return;
 	}
 
-	GenerateStatusStartedMessage();
+	fCandidates = pcl;
+	if(fStatusResponded == false)
+	{
+		GenerateStatusStartedMessage();
+		return;
+	}
 
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
-	msg->AddString(IME_STATUS_TAB_DESC, "待选字词");
+	msg->AddInt32("rows", fCandidatesRows);
+	msg->AddInt32("columns", min_c(pcl->total() - pcl->first() - fCandidatesOffset, fStatusMaxColumns));
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS)
+	{
+		// TODO: row_label
+		for(int k = 0; k < fStatusMaxColumns; k++)
+		{
+			BString aStr;
+			aStr << ((k == 9) ? 0 : (k + 1));
 
-	BString name;
-	name << IME_STATUS_TAB_DESC << ":待选字词:count";
-	msg->AddInt32(name.String(), pcl->total());
+			msg->AddString("column_label", aStr.String());
+		}
+	}
 
-	name.Truncate(0);
-	name << IME_STATUS_TAB_DESC << ":待选字词:preferred";
-	// TODO: by config
-	msg->AddInt32(name.String(), 10);
+	msg->AddInt32("total", pcl->total());
+	msg->AddInt32("offset", pcl->first() + fCandidatesOffset);
 
-	name.Truncate(0);
-	name << IME_STATUS_TAB_DESC << ":待选字词:offset";
-	msg->AddInt32(name.String(), pcl->first());
+	if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) &&
+	   fCandidatesSelection >= 0)
+		msg->AddInt32("selection", fCandidatesSelection);
 
 	BString bestWords;
-	name.Truncate(0);
-	name << IME_STATUS_TAB_DESC << ":待选字词";
-	for(int k = 0; k < pcl->size(); k++)
+	for(int k = 0;
+	    k < min_c(pcl->total() - pcl->first() - fCandidatesOffset, fCandidatesRows * fStatusMaxColumns);
+	    k++)
 	{
-		char *s = utf32_to_utf8(pcl->candiString(k));
+		char *s = utf32_to_utf8(pcl->candiString(pcl->first() + fCandidatesOffset + k));
 		if(s)
 		{
-			if(pcl->candiType(k) == ICandidateList::BEST_TAIL && bestWords.Length() == 0)
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
+			   pcl->candiType(pcl->first() + fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
+			   bestWords.Length() == 0)
+			{
 				bestWords.SetTo(s);
+			}
 			else
-				msg->AddString(name.String(), s);
+			{
+				if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS) == 0)
+				{
+					BString aStr;
+					aStr << (((k % fStatusMaxColumns) == 9) ? 0 : ((k % fStatusMaxColumns) + 1));
+					aStr << ". " << s;
+					msg->AddString("string", aStr.String());
+				}
+				else
+				{
+					msg->AddString("string", s);
+				}
+			}
 			free(s);
 		}
 	}
+
+	if(fSpecificArea.IsValid())
+		msg->AddRect("specific_area", fSpecificArea);
+
 	fModule->AddMessageToOutList(msg);
 
-	// TODO: style, split and use unicode annoatation if supported, &etc.
-	msg = new BMessage(B_INPUT_METHOD_EVENT);
-	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
-	if(bestWords.Length() > 0)
-		msg->AddString(IME_STRING_DESC, bestWords.String());
-	fModule->AddMessageToOutList(msg);
+	// TODO
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS)
+	{
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
+		if(bestWords.Length() > 0)
+			msg->AddString("string", bestWords.String());
+		fModule->AddMessageToOutList(msg);
+	}
 #endif
 }
 
@@ -378,7 +503,19 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 			case B_INPUT_METHOD_LOCATION_REQUEST:
 				fStatusWinMessenger.SendMessage(msg);
 				break;
-#endif
+#else // INPUT_SERVER_MORE_SUPPORT
+			case B_INPUT_METHOD_LOCATION_REQUEST:
+				if(fModule->Lock() == false) break;
+				fModule->IMHandler()->LocationReplied(msg);
+				fModule->Unlock();
+				break;
+
+			case E_INPUT_METHOD_STATUS_RESPONDED:
+				if(fModule->Lock() == false) break;
+				fModule->IMHandler()->StatusResponded(msg);
+				fModule->Unlock();
+				break;
+#endif // !INPUT_SERVER_MORE_SUPPORT
 
 			case B_INPUT_METHOD_STOPPED:
 				if(fModule->Lock() == false) break;

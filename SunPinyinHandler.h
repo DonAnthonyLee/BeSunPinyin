@@ -22,13 +22,25 @@ public:
 	void		Reset();
 #ifndef INPUT_SERVER_MORE_SUPPORT
 	void		SetStatusWindowMessenger(const BMessenger &msgr);
+#else
+	void		StatusResponded(const BMessage *msg);
+	void		LocationReplied(const BMessage *msg);
 #endif
 
 private:
 	SunPinyinModule *fModule;
 	bool fPreeditStartedSent;
 #ifdef INPUT_SERVER_MORE_SUPPORT
-	bool fStatusStartedSent;
+	bool fStatusResponded;
+	int32 fStatusMaxRows;
+	int32 fStatusMaxColumns;
+	int32 fStatusSupports;
+	BRect fSpecificArea;
+
+	const ICandidateList* fCandidates;
+	int32 fCandidatesOffset;
+	int32 fCandidatesSelection;
+	int32 fCandidatesRows;
 #else
 	BMessenger fStatusWinMessenger;
 #endif

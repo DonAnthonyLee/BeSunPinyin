@@ -6,6 +6,8 @@
 
 #ifdef __LITE_BEAPI__
 #define INPUT_SERVER_MORE_SUPPORT
+#define STATUS_MAX_ROWS				6
+#define STATUS_MAX_COLUMNS			10
 #endif
 
 #define COUNT_OF_MESSAGE_HANDLER_MESSENGERS	2
@@ -36,8 +38,11 @@ public:
 	void				Unlock();
 	bool				IsLocked();
 
+	SunPinyinHandler*		IMHandler();
+
 	// communicate with SunPinyinHandler
 	void				EmptyMessageOutList();
+	void				EnqueueMessageOutList();
 	void				AddMessageToOutList(BMessage *msg);
 	const BMessenger&		GetHandlerMessenger();
 	const BMessenger&		CurrentHandlerMessenger() const;
