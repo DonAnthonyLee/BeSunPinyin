@@ -500,7 +500,10 @@ SunPinyinModule::EnqueueMessageOutList()
 	for(int32 k = 0; k < fMessageOutList.CountItems(); k++)
 	{
 		BMessage *msg = (BMessage*)fMessageOutList.ItemAt(k);
-		if(msg != NULL) EnqueueMessage(msg);
+		if(msg != NULL)
+		{
+			if(EnqueueMessage(msg) != B_OK) delete msg;
+		}
 	}
 	fMessageOutList.MakeEmpty();
 }

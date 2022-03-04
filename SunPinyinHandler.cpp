@@ -93,6 +93,14 @@ SunPinyinHandler::Reset()
 	fCandidates = NULL;
 	fCandidatesOffset = 0;
 	fCandidatesSelection = -1;
+
+	// NOTE:
+	//	Because the status' responding messenger might be different from the method's,
+	// and module call this->Reset() when received E_INPUT_METHOD_STOPPED, we should inform
+	// the status' responding messenger to stop.
+	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
+	if(fModule->EnqueueMessage(msg) != B_OK) delete msg;
 #else
 	BMessage aMsg(B_INPUT_METHOD_EVENT);
 	aMsg.AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
@@ -154,7 +162,7 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 }
 
 void
-SunPinyinHandler::LocationReplied(const BMessage *msg)
+SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 {
 	BPoint where;
 	float h;
@@ -162,15 +170,92 @@ SunPinyinHandler::LocationReplied(const BMessage *msg)
 	fSpecificArea = BRect();
 
 	for(int32 k = 0;
-	    (msg->FindPoint(IME_LOCATION_REPLY_DESC, k, &where) == B_OK &&
-	     msg->FindFloat(IME_HEIGHT_REPLY_DESC, k, &h) == B_OK);
+	    (msg_loc->FindPoint(IME_LOCATION_REPLY_DESC, k, &where) == B_OK &&
+	     msg_loc->FindFloat(IME_HEIGHT_REPLY_DESC, k, &h) == B_OK);
 	    k++)
 	{
 		BRect r;
-		r.SetLeftBottom(where);
-		r.SetRightTop(where + BPoint(h, h));
+		r.SetLeftTop(where);
+		r.SetRightBottom(where + BPoint(h, h));
 		fSpecificArea |= r;
 	}
+
+	if(fStatusResponded == false || fCandidates == NULL) return;
+
+	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
+	msg->AddInt32("rows", fCandidatesRows);
+	msg->AddInt32("columns", min_c(fCandidates->total() - fCandidates->first() - fCandidatesOffset, fStatusMaxColumns));
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS)
+	{
+		// TODO: row_label
+		for(int32 k = 0; k < fStatusMaxColumns; k++)
+		{
+			BString aStr;
+			aStr << ((k == 9) ? 0 : (k + 1));
+
+			msg->AddString("column_label", aStr.String());
+		}
+	}
+
+	msg->AddInt32("total", fCandidates->total());
+	msg->AddInt32("offset", fCandidates->first() + fCandidatesOffset);
+
+	if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) &&
+	   fCandidatesSelection >= 0)
+		msg->AddInt32("selection", fCandidatesSelection);
+
+	BString bestWords;
+	for(int k = 0, m = 0;
+	    m < min_c(fCandidates->total() - fCandidates->first() - fCandidatesOffset,
+		      fCandidatesRows * fStatusMaxColumns) &&
+		fCandidatesOffset + k < fCandidates->size();
+	    k++)
+	{
+		char *s = utf32_to_utf8(fCandidates->candiString(fCandidatesOffset + k));
+		if(s)
+		{
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
+			   fCandidates->candiType(fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
+			   bestWords.Length() == 0)
+			{
+				bestWords.SetTo(s);
+			}
+			else
+			{
+				if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS) == 0)
+				{
+					BString aStr;
+					aStr << (((k % fStatusMaxColumns) == 9) ? 0 : ((k % fStatusMaxColumns) + 1));
+					aStr << ". " << s;
+					msg->AddString("string", aStr.String());
+				}
+				else
+				{
+					msg->AddString("string", s);
+				}
+				m++;
+			}
+			free(s);
+		}
+	}
+
+	if(fSpecificArea.IsValid())
+		msg->AddRect("specific_area", fSpecificArea);
+
+	fModule->AddMessageToOutList(msg);
+
+	// TODO
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS)
+	{
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
+		if(bestWords.Length() > 0)
+			msg->AddString("string", bestWords.String());
+		fModule->AddMessageToOutList(msg);
+	}
+
+	fModule->EnqueueMessageOutList();
 }
 #endif // !INPUT_SERVER_MORE_SUPPORT
 
@@ -233,12 +318,6 @@ SunPinyinHandler::commit(const TWCHAR* wstr)
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 	fModule->AddMessageToOutList(msg);
 
-#ifdef INPUT_SERVER_MORE_SUPPORT
-	msg = new BMessage(B_INPUT_METHOD_EVENT);
-	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
-	fModule->AddMessageToOutList(msg);
-#endif
-
 	Reset();
 }
 
@@ -265,12 +344,6 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
 		fModule->AddMessageToOutList(msg);
-
-#ifdef INPUT_SERVER_MORE_SUPPORT
-		msg = new BMessage(B_INPUT_METHOD_EVENT);
-		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
-		fModule->AddMessageToOutList(msg);
-#endif
 
 		Reset();
 		return;
@@ -343,7 +416,8 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	BMessage aMsg(B_INPUT_METHOD_EVENT);
 	// TODO: find another way, it's NOT GOOD!
 	aMsg.AddInt32(IME_OPCODE_DESC, 1234); // custom opcode
-	aMsg.AddString("candidates", aStr.String());
+	if(aStr.Length() > 0)
+		aMsg.AddString("candidates", aStr.String());
 	fStatusWinMessenger.SendMessage(&aMsg);
 
 	if(aStr.Length() > 0)
@@ -357,97 +431,26 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 
 	if(pcl->size() == 0)
 	{
-		if(fStatusResponded)
-		{
-			fStatusResponded = false;
-			fCandidates = NULL;
-			fCandidatesOffset = 0;
-			fCandidatesSelection = -1;
+		if(fStatusResponded == false) return;
 
-			msg = new BMessage(B_INPUT_METHOD_EVENT);
-			msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
-			fModule->AddMessageToOutList(msg);
-		}
+		fStatusResponded = false;
+		fCandidates = NULL;
+		fCandidatesOffset = 0;
+		fCandidatesSelection = -1;
 
-		return;
+		msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STOPPED);
+		fModule->AddMessageToOutList(msg);
 	}
-
-	fCandidates = pcl;
-	if(fStatusResponded == false)
-	{
-		GenerateStatusStartedMessage();
-		return;
-	}
-
-	msg = new BMessage(B_INPUT_METHOD_EVENT);
-	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
-	msg->AddInt32("rows", fCandidatesRows);
-	msg->AddInt32("columns", min_c(pcl->total() - pcl->first() - fCandidatesOffset, fStatusMaxColumns));
-	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS)
-	{
-		// TODO: row_label
-		for(int k = 0; k < fStatusMaxColumns; k++)
-		{
-			BString aStr;
-			aStr << ((k == 9) ? 0 : (k + 1));
-
-			msg->AddString("column_label", aStr.String());
-		}
-	}
-
-	msg->AddInt32("total", pcl->total());
-	msg->AddInt32("offset", pcl->first() + fCandidatesOffset);
-
-	if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) &&
-	   fCandidatesSelection >= 0)
-		msg->AddInt32("selection", fCandidatesSelection);
-
-	BString bestWords;
-	for(int k = 0;
-	    k < min_c(pcl->total() - pcl->first() - fCandidatesOffset, fCandidatesRows * fStatusMaxColumns) &&
-		fCandidatesOffset + k < pcl->size();
-	    k++)
-	{
-		char *s = utf32_to_utf8(pcl->candiString(fCandidatesOffset + k));
-		if(s)
-		{
-			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
-			   pcl->candiType(fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
-			   bestWords.Length() == 0)
-			{
-				bestWords.SetTo(s);
-			}
-			else
-			{
-				if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS) == 0)
-				{
-					BString aStr;
-					aStr << (((k % fStatusMaxColumns) == 9) ? 0 : ((k % fStatusMaxColumns) + 1));
-					aStr << ". " << s;
-					msg->AddString("string", aStr.String());
-				}
-				else
-				{
-					msg->AddString("string", s);
-				}
-			}
-			free(s);
-		}
-	}
-
-	if(fSpecificArea.IsValid())
-		msg->AddRect("specific_area", fSpecificArea);
-
-	fModule->AddMessageToOutList(msg);
-
-	// TODO
-	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS)
+	else
 	{
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
-		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_TIPS_CHANGED);
-		if(bestWords.Length() > 0)
-			msg->AddString("string", bestWords.String());
+		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_LOCATION_REQUEST);
 		fModule->AddMessageToOutList(msg);
+
+		fCandidates = pcl;
+		if(fStatusResponded == false)
+			GenerateStatusStartedMessage();
 	}
 #endif
 }
@@ -625,12 +628,17 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					//	1. Filling up different BMessenger to IME_REPLY_DESC at each STARTED;
 					//	2. Checking whether the reply is fit with current status, like using count, &etc.
 
-					BString aStr(cast_as(fCandidates, BStringView)->Text());
+					BString aStr;
+					fCandidatesMsg.FindString("candidates", &aStr);
 					if(aStr.Length() == 0) break;
+
+					float w = 0, h = 0;
+					cast_as(fCandidates, BStringView)->SetText(aStr.String());
+					fCandidates->GetPreferredSize(&w, &h);
+					ResizeTo(w + 2, h + 2);
 
 					int32 pos = ((fCaret < 0) ? 0 : fCaret);
 					BPoint where;
-					float h;
 
 					if(!(msg->FindPoint(IME_LOCATION_REPLY_DESC, pos, &where) == B_OK &&
 					     msg->FindFloat(IME_HEIGHT_REPLY_DESC, pos, &h) == B_OK))
@@ -677,20 +685,22 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 				cast_as(fCandidates, BStringView)->SetText("");
 				break;
 
-			default: // custom message for candidates list
+			case 1234: // custom message for candidates list
+				if(msg->HasString("candidates") == false)
 				{
-					BString aStr;
-					msg->FindString("candidates", &aStr);
+					fCandidatesMsg.MakeEmpty();
+
 					// NOTE: On HaikuOS, hide a hidden window cause issues.
-					if(aStr.Length() == 0 && !IsHidden()) Hide();
-					cast_as(fCandidates, BStringView)->SetText(aStr.String());
-					if(aStr.Length() > 0)
-					{
-						float w = 0, h = 0;
-						fCandidates->GetPreferredSize(&w, &h);
-						ResizeTo(w + 2, h + 2);
-					}
+					if(!IsHidden()) Hide();
 				}
+				else
+				{
+					fCandidatesMsg = *msg;
+				}
+				break;
+
+			default:
+				break;
 		}
 	}
 	else

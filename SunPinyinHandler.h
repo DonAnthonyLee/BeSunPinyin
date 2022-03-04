@@ -84,6 +84,7 @@ public:
 private:
 	BView *fCandidates;
 	int32 fCaret;
+	BMessage fCandidatesMsg;
 };
 #endif
 
