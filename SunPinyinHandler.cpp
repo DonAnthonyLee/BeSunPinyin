@@ -329,9 +329,9 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	BString aStr;
 
 	// TODO: do more than simple string
-	for(int k = 0; k < min_c(pcl->total() - pcl->first(), 10); k++)
+	for(int k = 0; k < min_c(pcl->size(), 10); k++)
 	{
-		char *s = utf32_to_utf8(pcl->candiString(k + pcl->first()));
+		char *s = utf32_to_utf8(pcl->candiString(k));
 		if(s)
 		{
 			if(aStr.Length() > 0) aStr << "  ";
@@ -355,7 +355,7 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 #else // INPUT_SERVER_MORE_SUPPORT
 	BMessage *msg;
 
-	if(pcl->total() == 0 || pcl->first() >= pcl->total())
+	if(pcl->size() == 0)
 	{
 		if(fStatusResponded)
 		{
@@ -404,14 +404,15 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 
 	BString bestWords;
 	for(int k = 0;
-	    k < min_c(pcl->total() - pcl->first() - fCandidatesOffset, fCandidatesRows * fStatusMaxColumns);
+	    k < min_c(pcl->total() - pcl->first() - fCandidatesOffset, fCandidatesRows * fStatusMaxColumns) &&
+		fCandidatesOffset + k < pcl->size();
 	    k++)
 	{
-		char *s = utf32_to_utf8(pcl->candiString(pcl->first() + fCandidatesOffset + k));
+		char *s = utf32_to_utf8(pcl->candiString(fCandidatesOffset + k));
 		if(s)
 		{
 			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
-			   pcl->candiType(pcl->first() + fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
+			   pcl->candiType(fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
 			   bestWords.Length() == 0)
 			{
 				bestWords.SetTo(s);
