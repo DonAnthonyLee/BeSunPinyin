@@ -38,6 +38,7 @@ public:
 	void				Unlock();
 	bool				IsLocked();
 
+	CIMIView*			IMView();
 	SunPinyinHandler*		IMHandler();
 
 	// communicate with SunPinyinHandler

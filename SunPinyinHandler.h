@@ -25,12 +25,15 @@ public:
 #else
 	void		StatusResponded(const BMessage *msg);
 	void		LocationReplied(const BMessage *msg);
+	void		StatusSelectionChanged();
+	bool		checkKeyEvent(CKeyEvent &key);
 #endif
 
 private:
 	SunPinyinModule *fModule;
 	bool fPreeditStartedSent;
 #ifdef INPUT_SERVER_MORE_SUPPORT
+	bool fStatusStopped;
 	bool fStatusResponded;
 	int32 fStatusMaxRows;
 	int32 fStatusMaxColumns;
@@ -39,6 +42,7 @@ private:
 
 	const ICandidateList* fCandidates;
 	int32 fCandidatesOffset;
+	int32 fBestWordsOffset;
 	int32 fCandidatesSelection;
 	int32 fCandidatesRows;
 #else

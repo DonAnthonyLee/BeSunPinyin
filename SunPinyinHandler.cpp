@@ -65,12 +65,14 @@ SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module)
 {
 	// TODO
 #ifdef INPUT_SERVER_MORE_SUPPORT
+	fStatusStopped = true;
 	fStatusResponded = false;
 	fStatusMaxRows = 1;
 	fStatusMaxColumns = 10;
 	fStatusSupports = 0;
 	fCandidates = NULL;
 	fCandidatesOffset = 0;
+	fBestWordsOffset = -1;
 	fCandidatesRows =  1;
 	fCandidatesSelection = -1;
 #endif
@@ -89,9 +91,12 @@ SunPinyinHandler::Reset()
 	fPreeditStartedSent = false;
 
 #ifdef INPUT_SERVER_MORE_SUPPORT
+	fStatusStopped = true;
 	fStatusResponded = false;
 	fCandidates = NULL;
 	fCandidatesOffset = 0;
+	fBestWordsOffset = -1;
+	fCandidatesRows =  1;
 	fCandidatesSelection = -1;
 
 	// NOTE:
@@ -125,6 +130,19 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 	switch(action)
 	{
 		case E_INPUT_METHOD_STATUS_CONFIG:
+			if(fStatusStopped)
+			{
+				// NOTE: Crossed response happened.
+				//    STARTED -> Server/Target
+				//       |         /|
+				//    STOPPED     / |
+				//       |   \   /  |
+				//   RESPONDED<-/   |
+				//             \    |
+				//              \->STOPPED
+				break;
+			}
+
 			msg->FindInt32("max_rows", &fStatusMaxRows);
 			if(fStatusMaxRows > STATUS_MAX_ROWS)
 				fStatusMaxRows = STATUS_MAX_ROWS;
@@ -201,11 +219,8 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 	msg->AddInt32("total", fCandidates->total());
 	msg->AddInt32("offset", fCandidates->first() + fCandidatesOffset);
 
-	if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) &&
-	   fCandidatesSelection >= 0)
-		msg->AddInt32("selection", fCandidatesSelection);
-
 	BString bestWords;
+	fBestWordsOffset = -1;
 	for(int k = 0, m = 0;
 	    m < min_c(fCandidates->total() - fCandidates->first() - fCandidatesOffset,
 		      fCandidatesRows * fStatusMaxColumns) &&
@@ -220,6 +235,7 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 			   bestWords.Length() == 0)
 			{
 				bestWords.SetTo(s);
+				fBestWordsOffset = k;
 			}
 			else
 			{
@@ -240,6 +256,15 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		}
 	}
 
+	if(fCandidatesSelection >= 0)
+	{
+		if(fCandidates->size() <= fCandidatesOffset + fCandidatesSelection + ((fBestWordsOffset < 0) ? 0 : 1) ||
+		   fCandidatesSelection >= fCandidatesRows * fStatusMaxColumns)
+			fCandidatesSelection = -1;
+		else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			msg->AddInt32("selection", fCandidatesSelection);
+	}
+
 	if(fSpecificArea.IsValid())
 		msg->AddRect("specific_area", fSpecificArea);
 
@@ -256,6 +281,221 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 	}
 
 	fModule->EnqueueMessageOutList();
+}
+
+
+void
+SunPinyinHandler::StatusSelectionChanged()
+{
+	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
+	msg->AddInt32("selection", fCandidatesSelection);
+	if(fModule->EnqueueMessage(msg) != B_OK) delete msg;
+}
+
+
+bool
+SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
+{
+	bool retVal = false;
+	if(fStatusResponded == false || fCandidates == NULL) return false;
+
+	int32 candidates_size = fCandidates->size();
+	if(fBestWordsOffset >= 0) candidates_size--;
+	if(candidates_size > STATUS_MAX_ROWS * STATUS_MAX_COLUMNS)
+		candidates_size = STATUS_MAX_ROWS * STATUS_MAX_COLUMNS;
+	if(candidates_size <= 0) return false;
+
+	switch(key.code)
+	{
+		case IM_VK_ESCAPE:
+			if(fCandidatesSelection >= 0 && fBestWordsOffset >= 0)
+			{
+				fCandidatesSelection = -1;
+				StatusSelectionChanged();
+				retVal = true;
+			}
+			break;
+
+		case IM_VK_SPACE:
+			if(fCandidatesSelection >= 0)
+			{
+				unsigned mask = 0;
+				unsigned id = fCandidatesOffset + fCandidatesSelection +
+						((fBestWordsOffset <= fCandidatesSelection && fBestWordsOffset >= 0) ? 1 : 0);
+				CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
+
+				im_view->makeSelection(id, mask);
+				im_view->updateWindows(mask);
+				retVal = true;
+			}
+			break;
+
+		case IM_VK_DOWN:
+			if(fCandidatesRows != min_c(STATUS_MAX_ROWS, fStatusMaxRows) && key.modifiers == 0)
+			{
+				fCandidatesRows = min_c(STATUS_MAX_ROWS, fStatusMaxRows);
+
+				int32 new_offset = (fCandidatesOffset / (fCandidatesRows * fStatusMaxColumns));
+				new_offset *= (fCandidatesRows * fStatusMaxColumns);
+
+				if(fCandidatesSelection >= 0)
+					fCandidatesSelection += (fCandidatesOffset - new_offset);
+				fCandidatesOffset = new_offset;
+
+				updateCandidates(fCandidates);
+				fModule->EnqueueMessageOutList();
+				retVal = true;
+			}
+			else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			{
+				if(!(fCandidatesSelection >= 0 &&
+				     (candidates_size <= fCandidatesOffset + fCandidatesSelection + fStatusMaxColumns ||
+					fCandidatesSelection + fStatusMaxColumns >= fCandidatesRows * fStatusMaxColumns)))
+				{
+					if(fCandidatesSelection < 0)
+						fCandidatesSelection = 0;
+					else
+						fCandidatesSelection += fStatusMaxColumns;
+
+					StatusSelectionChanged();
+				}
+				retVal = true;
+			}
+			break;
+
+		case IM_VK_UP:
+			if(fCandidatesRows != 1 && fCandidatesSelection < fStatusMaxColumns && key.modifiers == 0)
+			{
+				fCandidatesRows = 1;
+				updateCandidates(fCandidates);
+				fModule->EnqueueMessageOutList();
+				retVal = true;
+			}
+			else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			{
+				if(fCandidatesSelection >= fStatusMaxColumns)
+				{
+					fCandidatesSelection -= fStatusMaxColumns;
+					StatusSelectionChanged();
+				}
+				retVal = true;
+			}
+			break;
+
+		case IM_VK_RIGHT:
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)/* && key.modifiers != 0*/)
+			{
+				if(!(fCandidatesSelection >= 0 &&
+				     (candidates_size <= fCandidatesOffset + fCandidatesSelection + 1 ||
+					(fCandidatesSelection % fStatusMaxColumns) + 1 >= fStatusMaxColumns)))
+				{
+					if(fCandidatesSelection < 0)
+						fCandidatesSelection = 0;
+					else
+						fCandidatesSelection += 1;
+
+					StatusSelectionChanged();
+				}
+				retVal = true;
+			}
+			break;
+
+		case IM_VK_LEFT:
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)/* && key.modifiers != 0*/)
+			{
+				if((fCandidatesSelection % fStatusMaxColumns) > 0)
+				{
+					fCandidatesSelection--;
+					StatusSelectionChanged();
+				}
+				retVal = true;
+			}
+			break;
+
+		default:
+			if(key.value >= ((fStatusMaxColumns < 10) ? '1' : '0') &&
+			   key.value <= ((fStatusMaxColumns < 10) ? ('0' + fStatusMaxColumns) : '9') &&
+			   key.modifiers == 0)
+			{
+				if(fCandidatesRows == 1 || fCandidatesSelection >= 0)
+				{
+					unsigned id = (unsigned)((key.value == '0') ? 9 : (key.value - '1'));
+					if(fCandidatesSelection >= 0)
+						id += (fCandidatesSelection / fStatusMaxColumns) * fStatusMaxColumns;
+					if(fBestWordsOffset <= id && fBestWordsOffset >= 0) id++;
+					id += fCandidatesOffset;
+
+					if(id < candidates_size)
+					{
+						unsigned mask = 0;
+						CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
+
+						im_view->makeSelection(id, mask);
+						im_view->updateWindows(mask);
+					}
+				}
+
+				retVal = true;
+			}
+			else
+			{
+				CHotkeyProfile *profile = fModule->IMView()->getHotkeyProfile();
+				if(profile->isPageDownKey(key))
+				{
+					if(fCandidates->total() >=
+						fCandidates->first() + fCandidatesOffset +
+						fCandidatesRows * fStatusMaxColumns)
+					{
+						if(candidates_size > fCandidatesOffset + fCandidatesRows * fStatusMaxColumns)
+						{
+							fCandidatesOffset += fCandidatesRows * fStatusMaxColumns;
+							updateCandidates(fCandidates);
+							fModule->EnqueueMessageOutList();
+						}
+						else
+						{
+							CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
+							int pgno = fCandidates->first() / (STATUS_MAX_ROWS * STATUS_MAX_COLUMNS) + 1;
+
+							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
+							im_view->onCandidatePageRequest(pgno, false);
+							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
+							im_view->updateWindows(CIMIClassicView::CANDIDATE_MASK);
+						}
+					}
+
+					retVal = true;
+				}
+				else if(profile->isPageUpKey(key))
+				{
+					if(!(fCandidates->first() == 0 && fCandidatesOffset == 0))
+					{
+						if(fCandidatesOffset > 0)
+						{
+							fCandidatesOffset = max_c(0, fCandidatesOffset - fCandidatesRows * fStatusMaxColumns);
+							updateCandidates(fCandidates);
+							fModule->EnqueueMessageOutList();
+						}
+						else
+						{
+							CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
+							int pgno = fCandidates->first() / (STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
+							if(pgno > 0) pgno--;
+
+							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
+							im_view->onCandidatePageRequest(pgno, false);
+							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
+							im_view->updateWindows(CIMIClassicView::CANDIDATE_MASK);
+						}
+					}
+
+					retVal = true;
+				}
+			}
+	}
+
+	return retVal;
 }
 #endif // !INPUT_SERVER_MORE_SUPPORT
 
@@ -288,10 +528,18 @@ SunPinyinHandler::GenerateStatusStartedMessage()
 	if(fStatusResponded) return;
 
 	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+#if 0
+	// E_INPUT_METHOD_STATUS_RESPONDED will use same timestamp,
+	// we can use this to detect whether it's crossed.
+	msg->AddInt64("when", system_time());
+#endif
 	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_STARTED);
 	msg->AddMessenger(IME_REPLY_DESC, fModule->CurrentHandlerMessenger());
 	//msg->AddString("tab_label", "待选字词");
 	fModule->AddMessageToOutList(msg);
+
+	// expecting response
+	fStatusStopped = false;
 }
 #endif
 
@@ -433,9 +681,12 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 	{
 		if(fStatusResponded == false) return;
 
+		fStatusStopped = true;
 		fStatusResponded = false;
 		fCandidates = NULL;
 		fCandidatesOffset = 0;
+		fBestWordsOffset = -1;
+		fCandidatesRows =  1;
 		fCandidatesSelection = -1;
 
 		msg = new BMessage(B_INPUT_METHOD_EVENT);

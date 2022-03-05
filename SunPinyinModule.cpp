@@ -383,17 +383,14 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 		EmptyMessageOutList();
 
-#ifdef INPUT_SERVER_MORE_SUPPORT
-		if(byte >= '0' && byte <= '9')
-		{
-			// TODO: best match, expanding, &etc.
-			retVal = B_SKIP_MESSAGE;
-			break;
-		}
-#endif
-
 		// fIMView->onKeyEvent() will call the proper handling of SunPinyinHandler
-		bool used = fIMView->onKeyEvent(CKeyEvent(keyCode, byte, keyState));
+		bool used = false;
+		CKeyEvent ckey(keyCode, byte, keyState);
+#ifdef INPUT_SERVER_MORE_SUPPORT
+		used = fIMHandler->checkKeyEvent(ckey);
+#endif
+		if(used == false)
+			used = fIMView->onKeyEvent(ckey);
 
 		if(used && fMessageOutList.CountItems() == 0)
 		{
@@ -537,8 +534,8 @@ SunPinyinModule::CurrentHandlerMessenger() const
 void
 SunPinyinModule::ResetSunPinyin()
 {
-	if(fIMView) fIMView->clearIC();
-	if(fIMHandler) fIMHandler->Reset();
+	fIMView->clearIC();
+	fIMHandler->Reset();
 }
 
 
@@ -617,6 +614,15 @@ SunPinyinModule::_InitSunPinyin()
 		fErrorInfo << "Failed to initialize fIMView!\n";
 		return B_ERROR;
 	}
+
+#ifdef INPUT_SERVER_MORE_SUPPORT
+	if(!is_kind_of(fIMView, CIMIClassicView))
+	{
+		fErrorInfo << "Failed to initialize fIMView!\n";
+		return B_ERROR;
+	}
+#endif
+
 	if((fIMHandler = new SunPinyinHandler(this)) == NULL)
 	{
 		fErrorInfo << "Failed to allocate memory for fIMHandler!\n";
@@ -673,6 +679,13 @@ SunPinyinModule::_DeInitSunPinyin()
 		CSunpinyinSessionFactory::getFactory().destroySession(fIMView);
 	if(fIMHandler)
 		delete fIMHandler;
+}
+
+
+CIMIView*
+SunPinyinModule::IMView()
+{
+	return fIMView;
 }
 
 
