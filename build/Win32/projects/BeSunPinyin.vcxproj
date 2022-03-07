@@ -285,10 +285,12 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\SunPinyinStatusWindow.cpp" />
     <ClCompile Include=".\SunPinyinHandler-VC.cpp" />
     <ClCompile Include=".\SunPinyinModule-VC.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\SunPinyinStatusWindow.h" />
     <ClCompile Include="..\..\..\SunPinyinHandler.h" />
     <ClCompile Include="..\..\..\SunPinyinModule.h" />
   </ItemGroup>

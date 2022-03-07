@@ -1,5 +1,6 @@
 #include "SunPinyinModule.h"
 #include "SunPinyinHandler.h"
+#include "SunPinyinStatusWindow.h"
 
 
 // NOTE:

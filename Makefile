@@ -83,8 +83,9 @@ endif
 CFLAGS += $(SO_CFLAGS)
 CXXFLAGS = $(CFLAGS)
 
-SUNPINYIN_OBJECTS =		\
-	SunPinyinHandler.lo	\
+SUNPINYIN_OBJECTS =			\
+	SunPinyinStatusWindow.lo	\
+	SunPinyinHandler.lo		\
 	SunPinyinModule.lo
 
 TARGETS =			\

@@ -15,11 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\SunPinyinStatusWindow.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
     <ClCompile Include=".\SunPinyinHandler-VC.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
     <ClCompile Include=".\SunPinyinModule-VC.cpp">
       <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SunPinyinStatusWindow.h">
+      <Filter>Head files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\SunPinyinHandler.h">
       <Filter>Head files</Filter>
