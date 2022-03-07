@@ -25,7 +25,6 @@ public:
 #else
 	void		StatusResponded(const BMessage *msg);
 	void		LocationReplied(const BMessage *msg);
-	void		StatusSelectionChanged();
 	bool		checkKeyEvent(CKeyEvent &key);
 #endif
 
@@ -45,6 +44,7 @@ private:
 	int32 fBestWordsOffset;
 	int32 fCandidatesSelection;
 	int32 fCandidatesRows;
+	int32 fCaret;
 #else
 	BMessenger fStatusWinMessenger;
 #endif
@@ -52,6 +52,8 @@ private:
 	void		GeneratePreeditStartedMessage();
 #ifdef INPUT_SERVER_MORE_SUPPORT
 	void		GenerateStatusStartedMessage();
+	bool		IsStatusSelectionValid(int32 selection) const;
+	void		StatusSelectionChanged();
 #endif
 };
 

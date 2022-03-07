@@ -73,8 +73,9 @@ SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module)
 	fCandidates = NULL;
 	fCandidatesOffset = 0;
 	fBestWordsOffset = -1;
-	fCandidatesRows =  1;
+	fCandidatesRows = 1;
 	fCandidatesSelection = -1;
+	fCaret = 0;
 #endif
 }
 
@@ -96,8 +97,9 @@ SunPinyinHandler::Reset()
 	fCandidates = NULL;
 	fCandidatesOffset = 0;
 	fBestWordsOffset = -1;
-	fCandidatesRows =  1;
+	fCandidatesRows = 1;
 	fCandidatesSelection = -1;
+	fCaret = 0;
 
 	// NOTE:
 	//	Because the status' responding messenger might be different from the method's,
@@ -158,18 +160,73 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 			}
 			break;
 
-		case E_INPUT_METHOD_STATUS_CONFIRM_STRING:
-			// TODO
-			break;
-
 		case E_INPUT_METHOD_STATUS_FOCUS_CHANGED:
-			// TODO
+			if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			{
+				int32 btns = -1;
+				int32 row_index, column_index;
+				if(msg->FindInt32("row_index", &row_index) != B_OK ||
+				   msg->FindInt32("column_index", &column_index) != B_OK ||
+				   row_index < 0 || column_index < 0) break;
+				msg->FindInt32("buttons", &btns);
+
+				if(IsStatusSelectionValid(row_index * fStatusMaxColumns + column_index))
+				{
+					fCandidatesSelection = row_index * fStatusMaxColumns + column_index;
+					StatusSelectionChanged();
+
+					if(btns >= 0)
+					{
+						CKeyEvent key(IM_VK_SPACE, ' ', 0);
+						checkKeyEvent(key);
+						fModule->EnqueueMessageOutList();
+					}
+				}
+			}
 			break;
 
 		case E_INPUT_METHOD_STATUS_SHIFT_REQUEST:
-			// TODO
+			if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			{
+				int32 offset;
+				if(msg->FindInt32("offset", &offset) == B_OK)
+				{
+					if(offset == fCandidatesRows * fStatusMaxColumns)
+					{
+						CKeyEvent key(IM_VK_PAGE_DOWN, 0, 0);
+						checkKeyEvent(key);
+						fModule->EnqueueMessageOutList();
+					}
+					else if(offset == -fCandidatesRows * fStatusMaxColumns)
+					{
+						CKeyEvent key(IM_VK_PAGE_UP, 0, 0);
+						checkKeyEvent(key);
+						fModule->EnqueueMessageOutList();
+					}
+					else // free offset by scrollbar, &etc.
+					{
+						// TODO
+					}
+				}
+				else if((fCandidatesRows == 1 || fCandidatesSelection >= 0) &&
+					(msg->HasInt32("row_index") || msg->HasInt32("column_index")))
+				{
+					int32 row_index = ((fCandidatesSelection >= 0) ?
+								(fCandidatesSelection / fStatusMaxColumns) : 0);
+					int32 column_index = ((fCandidatesSelection >= 0) ?
+								(fCandidatesSelection % fStatusMaxColumns) : 0);
+					msg->FindInt32("row_index", &row_index);
+					msg->FindInt32("column_index", &column_index);
+					if(row_index >= 0 && column_index >= 0)
+					{
+						fCandidatesSelection = row_index * fStatusMaxColumns + column_index;
+						StatusSelectionChanged();
+					}
+				}
+			}
 			break;
 
+		case E_INPUT_METHOD_STATUS_CONFIRM_STRING:
 		case E_INPUT_METHOD_STATUS_TIPS_HIDDEN:
 			// TODO
 			break;
@@ -187,7 +244,7 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 
 	fSpecificArea = BRect();
 
-	for(int32 k = 0;
+	for(int32 k = (msg_loc->HasPoint(IME_LOCATION_REPLY_DESC, fCaret) ? fCaret : 0);
 	    (msg_loc->FindPoint(IME_LOCATION_REPLY_DESC, k, &where) == B_OK &&
 	     msg_loc->FindFloat(IME_HEIGHT_REPLY_DESC, k, &h) == B_OK);
 	    k++)
@@ -256,14 +313,10 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		}
 	}
 
-	if(fCandidatesSelection >= 0)
-	{
-		if(fCandidates->size() <= fCandidatesOffset + fCandidatesSelection + ((fBestWordsOffset < 0) ? 0 : 1) ||
-		   fCandidatesSelection >= fCandidatesRows * fStatusMaxColumns)
-			fCandidatesSelection = -1;
-		else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
-			msg->AddInt32("selection", fCandidatesSelection);
-	}
+	if(IsStatusSelectionValid(fCandidatesSelection) == false)
+		fCandidatesSelection = -1;
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+		msg->AddInt32("selection", fCandidatesSelection);
 
 	if(fSpecificArea.IsValid())
 		msg->AddRect("specific_area", fSpecificArea);
@@ -284,13 +337,37 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 }
 
 
+bool
+SunPinyinHandler::IsStatusSelectionValid(int32 selection) const
+{
+	if(fCandidates == NULL && selection >= 0)
+	{
+		return false;
+	}
+	else if(fCandidates != NULL && selection >= 0)
+	{
+		if(fCandidates->size() <= fCandidatesOffset + selection + ((fBestWordsOffset < 0) ? 0 : 1) ||
+		   selection >= fCandidatesRows * fStatusMaxColumns)
+			return false;
+	}
+
+	return true;
+}
+
+
 void
 SunPinyinHandler::StatusSelectionChanged()
 {
-	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
-	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
-	msg->AddInt32("selection", fCandidatesSelection);
-	if(fModule->EnqueueMessage(msg) != B_OK) delete msg;
+	if(IsStatusSelectionValid(fCandidatesSelection) == false)
+		fCandidatesSelection = -1;
+
+	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+	{
+		BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
+		msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
+		msg->AddInt32("selection", fCandidatesSelection);
+		if(fModule->EnqueueMessage(msg) != B_OK) delete msg;
+	}
 }
 
 
@@ -344,10 +421,9 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				fCandidatesOffset = new_offset;
 
 				updateCandidates(fCandidates);
-				fModule->EnqueueMessageOutList();
 				retVal = true;
 			}
-			else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			else if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
 				if(!(fCandidatesSelection >= 0 &&
 				     (candidates_size <= fCandidatesOffset + fCandidatesSelection + fStatusMaxColumns ||
@@ -369,10 +445,9 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			{
 				fCandidatesRows = 1;
 				updateCandidates(fCandidates);
-				fModule->EnqueueMessageOutList();
 				retVal = true;
 			}
-			else if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)
+			else if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
 				if(fCandidatesSelection >= fStatusMaxColumns)
 				{
@@ -384,7 +459,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			break;
 
 		case IM_VK_RIGHT:
-			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)/* && key.modifiers != 0*/)
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
 				if(!(fCandidatesSelection >= 0 &&
 				     (candidates_size <= fCandidatesOffset + fCandidatesSelection + 1 ||
@@ -402,7 +477,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			break;
 
 		case IM_VK_LEFT:
-			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION)/* && key.modifiers != 0*/)
+			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
 				if((fCandidatesSelection % fStatusMaxColumns) > 0)
 				{
@@ -441,7 +516,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			else
 			{
 				CHotkeyProfile *profile = fModule->IMView()->getHotkeyProfile();
-				if(profile->isPageDownKey(key))
+				if((key.code == IM_VK_PAGE_DOWN && key.modifiers == 0) || profile->isPageDownKey(key))
 				{
 					if(fCandidates->total() >=
 						fCandidates->first() + fCandidatesOffset +
@@ -451,7 +526,6 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 						{
 							fCandidatesOffset += fCandidatesRows * fStatusMaxColumns;
 							updateCandidates(fCandidates);
-							fModule->EnqueueMessageOutList();
 						}
 						else
 						{
@@ -467,7 +541,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 
 					retVal = true;
 				}
-				else if(profile->isPageUpKey(key))
+				else if((key.code == IM_VK_PAGE_UP && key.modifiers == 0) || profile->isPageUpKey(key))
 				{
 					if(!(fCandidates->first() == 0 && fCandidatesOffset == 0))
 					{
@@ -475,7 +549,6 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 						{
 							fCandidatesOffset = max_c(0, fCandidatesOffset - fCandidatesRows * fStatusMaxColumns);
 							updateCandidates(fCandidates);
-							fModule->EnqueueMessageOutList();
 						}
 						else
 						{
@@ -587,7 +660,10 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 	char *str = utf32_to_utf8(wstr);
 	BMessage *msg;
 
-	if(str == NULL)
+	BString aStr(str);
+	if(str) free(str);
+
+	if(aStr.Length() == 0)
 	{
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
 		msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_STOPPED);
@@ -601,45 +677,48 @@ SunPinyinHandler::updatePreedit(const IPreeditString* ppd)
 
 	msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_CHANGED);
-	if(str)
+
+	msg->AddInt32(IME_CLAUSE_START_DESC, 0);
+	msg->AddInt32(IME_CLAUSE_END_DESC, aStr.Length());
+
+	// NOTE: on Win32, wchar_t is in unicode, not UTF32, so we use the WCSLEN() of SunPinyin
+	size_t len = WCSLEN(wstr);
+	int32 caret;
+	if(ppd->caret() < (int)len)
 	{
-		BString aStr(str);
-		free(str);
-
-		msg->AddInt32(IME_CLAUSE_START_DESC, 0);
-		msg->AddInt32(IME_CLAUSE_END_DESC, aStr.Length());
-
-		// NOTE: on Win32, wchar_t is in unicode, not UTF32, so we use the WCSLEN() of SunPinyin
-		int32 caret;
-		size_t len = WCSLEN(wstr);
-		if(ppd->caret() < (int)len)
-		{
-			caret = 0;
-			for(int k = 0; k < ppd->caret(); k++)
-				caret += LENGTH_CONVERT_TO_UTF8(wstr[k]);
-		}
-		else
-		{
-			caret = aStr.Length();
-		}
+		caret = 0;
+		for(int k = 0; k < ppd->caret(); k++)
+			caret += LENGTH_CONVERT_TO_UTF8(wstr[k]);
+	}
+	else
+	{
+		caret = aStr.Length();
+	}
 
 #ifdef __LITE_BEAPI__
-		msg->AddInt32(IME_SELECTION_DESC, caret);
-		msg->AddInt32(IME_SELECTION_DESC, caret);
+	msg->AddInt32(IME_SELECTION_DESC, caret);
+	msg->AddInt32(IME_SELECTION_DESC, caret);
 #else
-		if(caret == aStr.Length()) aStr.Append(" ");
-		msg->AddInt32(IME_SELECTION_DESC, caret);
-		msg->AddInt32(IME_SELECTION_DESC, caret + 1);
+	if(caret == aStr.Length()) aStr.Append(" ");
+	msg->AddInt32(IME_SELECTION_DESC, caret);
+	msg->AddInt32(IME_SELECTION_DESC, caret + 1);
 #endif
 
-		msg->AddString(IME_STRING_DESC, aStr.String());
-	}
+	msg->AddString(IME_STRING_DESC, aStr.String());
 	msg->AddBool(IME_CONFIRMED_DESC, false);
+	fModule->AddMessageToOutList(msg);
+
 #ifndef INPUT_SERVER_MORE_SUPPORT
 	// Notify StatusWindow that the position of caret changed
 	fStatusWinMessenger.SendMessage(msg);
-#endif
+#else
+	aStr.Truncate(caret);
+	fCaret = aStr.CountChars();
+
+	msg = new BMessage(B_INPUT_METHOD_EVENT);
+	msg->AddInt32(IME_OPCODE_DESC, B_INPUT_METHOD_LOCATION_REQUEST);
 	fModule->AddMessageToOutList(msg);
+#endif
 }
 
 
@@ -686,7 +765,7 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 		fCandidates = NULL;
 		fCandidatesOffset = 0;
 		fBestWordsOffset = -1;
-		fCandidatesRows =  1;
+		fCandidatesRows = 1;
 		fCandidatesSelection = -1;
 
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
@@ -751,7 +830,6 @@ SunPinyinMessageHandler::MessageReceived(BMessage *msg)
 		int32 opcode = 0;
 		msg->FindInt32(IME_OPCODE_DESC, &opcode);
 
-		// TODO
 		switch(opcode)
 		{
 #ifndef INPUT_SERVER_MORE_SUPPORT
@@ -896,30 +974,24 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 					{
 						if(pos == 0) break;
 						// some platforms like EIME-XIM, the location reply is single when using XIMPreeditCallback style
-					   	if(!(msg->FindPoint(IME_LOCATION_REPLY_DESC, 0, &where) == B_OK &&
-					   	     msg->FindFloat(IME_HEIGHT_REPLY_DESC, 0, &h) == B_OK)) break;
+						if(!(msg->FindPoint(IME_LOCATION_REPLY_DESC, 0, &where) == B_OK &&
+						     msg->FindFloat(IME_HEIGHT_REPLY_DESC, 0, &h) == B_OK)) break;
 					}
+
+					// some platforms like EIME-XIM, the height reply maybe set to 0
+					if(h <= 0)
+						h = Frame().Height();
 
 					// adjust the postion
 					BScreen screen(this);
 					BRect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
 					BRect rect = Frame().OffsetToSelf(where + BPoint(0, h + 2));
-					if(scrRect.Contains(rect) == false)
-					{
-						if(rect.bottom > scrRect.bottom)
-						{
-							if(h > 0.f)
-								rect.OffsetBy(0, where.y - rect.Height() - 2 - rect.top);
-							else // some platforms like EIME-XIM, the height reply maybe set to 0
-								rect.OffsetBy(0, where.y - 2 * rect.Height() - 2 - rect.top);
-							if(rect.bottom > scrRect.bottom)
-								rect.OffsetBy(0, scrRect.bottom - rect.bottom);
-						}
-						if(rect.left < 0)
-							rect.OffsetBy(-rect.left, 0);
-						else if(rect.right > scrRect.right && rect.Width() < scrRect.Width())
-							rect.OffsetBy(scrRect.right - rect.right, 0);
-					}
+					if(rect.bottom > scrRect.bottom && where.y - rect.Height() - 2 > 0)
+						rect.OffsetBy(0, where.y - rect.Height() - 2 - rect.top);
+					if(rect.left < 0)
+						rect.OffsetBy(-rect.left, 0);
+					else if(rect.right > scrRect.right && rect.Width() < scrRect.Width())
+						rect.OffsetBy(scrRect.right - rect.right, 0);
 					MoveTo(rect.LeftTop());
 
 					if(IsHidden()) Show();
