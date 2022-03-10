@@ -421,7 +421,6 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				fCandidatesOffset = new_offset;
 
 				updateCandidates(fCandidates);
-				retVal = true;
 			}
 			else if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
@@ -438,6 +437,8 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				}
 				retVal = true;
 			}
+			if(key.modifiers == 0) // to prevent ruining
+				retVal = true;
 			break;
 
 		case IM_VK_UP:
@@ -445,7 +446,6 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			{
 				fCandidatesRows = 1;
 				updateCandidates(fCandidates);
-				retVal = true;
 			}
 			else if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_SELECTION) && key.modifiers != 0)
 			{
@@ -456,6 +456,8 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				}
 				retVal = true;
 			}
+			if(key.modifiers == 0) // to prevent ruining
+				retVal = true;
 			break;
 
 		case IM_VK_RIGHT:
