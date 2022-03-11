@@ -44,6 +44,7 @@ private:
 	int32 fBestWordsOffset;
 	int32 fCandidatesSelection;
 	int32 fCandidatesRows;
+	int32 fCandidatesColumns;
 	int32 fCaret;
 #else
 	BMessenger fStatusWinMessenger;

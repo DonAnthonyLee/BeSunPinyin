@@ -74,6 +74,7 @@ SunPinyinHandler::SunPinyinHandler(SunPinyinModule *module)
 	fCandidatesOffset = 0;
 	fBestWordsOffset = -1;
 	fCandidatesRows = 1;
+	fCandidatesColumns = 0;
 	fCandidatesSelection = -1;
 	fCaret = 0;
 #endif
@@ -98,6 +99,7 @@ SunPinyinHandler::Reset()
 	fCandidatesOffset = 0;
 	fBestWordsOffset = -1;
 	fCandidatesRows = 1;
+	fCandidatesColumns = 0;
 	fCandidatesSelection = -1;
 	fCaret = 0;
 
@@ -191,13 +193,13 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 				int32 offset;
 				if(msg->FindInt32("offset", &offset) == B_OK)
 				{
-					if(offset == fCandidatesRows * fStatusMaxColumns)
+					if(offset == fCandidatesRows * fCandidatesColumns)
 					{
 						CKeyEvent key(IM_VK_PAGE_DOWN, 0, 0);
 						checkKeyEvent(key);
 						fModule->EnqueueMessageOutList();
 					}
-					else if(offset == -fCandidatesRows * fStatusMaxColumns)
+					else if(offset == -fCandidatesRows * fCandidatesColumns)
 					{
 						CKeyEvent key(IM_VK_PAGE_UP, 0, 0);
 						checkKeyEvent(key);
@@ -242,6 +244,10 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 	BPoint where;
 	float h;
 
+	if(fStatusResponded == false ||
+	   fCandidates == NULL ||
+	   fCandidates->size() <= fCandidatesOffset) return;
+
 	fSpecificArea = BRect();
 
 	for(int32 k = (msg_loc->HasPoint(IME_LOCATION_REPLY_DESC, fCaret) ? fCaret : 0);
@@ -255,12 +261,8 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		fSpecificArea |= r;
 	}
 
-	if(fStatusResponded == false || fCandidates == NULL) return;
-
 	BMessage *msg = new BMessage(B_INPUT_METHOD_EVENT);
 	msg->AddInt32(IME_OPCODE_DESC, E_INPUT_METHOD_STATUS_CHANGED);
-	msg->AddInt32("rows", fCandidatesRows);
-	msg->AddInt32("columns", min_c(fCandidates->total() - fCandidates->first() - fCandidatesOffset, fStatusMaxColumns));
 	if(fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_LABELS)
 	{
 		// TODO: row_label
@@ -276,11 +278,11 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 	msg->AddInt32("total", fCandidates->total());
 	msg->AddInt32("offset", fCandidates->first() + fCandidatesOffset);
 
+	int32 m = 0;
 	BString bestWords;
 	fBestWordsOffset = -1;
-	for(int k = 0, m = 0;
-	    m < min_c(fCandidates->total() - fCandidates->first() - fCandidatesOffset,
-		      fCandidatesRows * fStatusMaxColumns) &&
+	for(int k = 0;
+	    m < fCandidatesRows * fStatusMaxColumns &&
 		fCandidatesOffset + k < fCandidates->size();
 	    k++)
 	{
@@ -289,7 +291,8 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		{
 			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
 			   fCandidates->candiType(fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
-			   bestWords.Length() == 0)
+			   bestWords.Length() == 0 &&
+			   fCandidates->size() > fCandidatesOffset + 1)
 			{
 				bestWords.SetTo(s);
 				fBestWordsOffset = k;
@@ -312,6 +315,11 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 			free(s);
 		}
 	}
+
+	// NOTE: libsunpinyin has BUGS, so we use "m" to count columns instead.
+	fCandidatesColumns = min_c(m, fStatusMaxColumns);
+	msg->AddInt32("rows", fCandidatesRows);
+	msg->AddInt32("columns", fCandidatesColumns);
 
 	if(IsStatusSelectionValid(fCandidatesSelection) == false)
 		fCandidatesSelection = -1;
@@ -442,7 +450,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 			break;
 
 		case IM_VK_UP:
-			if(fCandidatesRows != 1 && fCandidatesSelection < fStatusMaxColumns && key.modifiers == 0)
+			if(fCandidatesRows != 1 && key.modifiers == 0)
 			{
 				fCandidatesRows = 1;
 				updateCandidates(fCandidates);
@@ -768,6 +776,7 @@ SunPinyinHandler::updateCandidates(const ICandidateList* pcl)
 		fCandidatesOffset = 0;
 		fBestWordsOffset = -1;
 		fCandidatesRows = 1;
+		fCandidatesColumns = 0;
 		fCandidatesSelection = -1;
 
 		msg = new BMessage(B_INPUT_METHOD_EVENT);
