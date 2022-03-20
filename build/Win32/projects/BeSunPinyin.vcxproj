@@ -139,6 +139,9 @@
       <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
       <CLRImageType>ForceIJWImage</CLRImageType>
     </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\utils\prepare_to_build.bat $(SolutionDir)..\..</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -172,7 +175,7 @@
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -185,6 +188,9 @@
       <CLRImageType>ForceIJWImage</CLRImageType>
       <IgnoreSpecificDefaultLibraries>libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrtd.lib</IgnoreSpecificDefaultLibraries>
     </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\utils\prepare_to_build.bat $(SolutionDir)..\..</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -233,6 +239,9 @@
       <CLRThreadAttribute>STAThreadingAttribute</CLRThreadAttribute>
       <CLRImageType>ForceIJWImage</CLRImageType>
     </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\utils\prepare_to_build.bat $(SolutionDir)..\..</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -267,7 +276,7 @@
       <OutputFile>$(OutDir)BeSunPinyin.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\libs\etkxx-win32\lib-vc14-x64\Release;$(SolutionDir)..\..\libs\sunpinyin\build\Win32\projects\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -283,6 +292,9 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)..\..\utils\prepare_to_build.bat $(SolutionDir)..\..</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SunPinyinStatusWindow.cpp" />
