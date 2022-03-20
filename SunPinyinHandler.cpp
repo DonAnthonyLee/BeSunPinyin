@@ -275,9 +275,6 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		}
 	}
 
-	msg->AddInt32("total", fCandidates->total());
-	msg->AddInt32("offset", fCandidates->first() + fCandidatesOffset);
-
 	int32 m = 0;
 	BString bestWords;
 	fBestWordsOffset = -1;
@@ -292,7 +289,7 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 			if((fStatusSupports & E_INPUT_METHOD_STATUS_SUPPORT_TIPS) &&
 			   fCandidates->candiType(fCandidatesOffset + k) == ICandidateList::BEST_TAIL &&
 			   bestWords.Length() == 0 &&
-			   fCandidates->size() > fCandidatesOffset + 1)
+			   (fCandidates->size() > fCandidatesOffset + 1 || fCandidates->total() == 1))
 			{
 				bestWords.SetTo(s);
 				fBestWordsOffset = k;
@@ -316,7 +313,15 @@ SunPinyinHandler::LocationReplied(const BMessage *msg_loc)
 		}
 	}
 
-	// NOTE: libsunpinyin has BUGS, so we use "m" to count columns instead.
+	// NOTE: libsunpinyin has BUGS, so we use "m" to make it right.
+	int32_t total = fCandidates->total() - ((fBestWordsOffset >= 0) ? 1 : 0);
+	if(m < fCandidatesRows * fStatusMaxColumns &&
+	  fCandidates->total() > fCandidates->first() + fCandidatesOffset + m)
+		total = fCandidates->first() + fCandidatesOffset + m;
+
+	msg->AddInt32("total", total);
+	msg->AddInt32("offset", fCandidates->first() + fCandidatesOffset);
+
 	fCandidatesColumns = min_c(m, fStatusMaxColumns);
 	msg->AddInt32("rows", fCandidatesRows);
 	msg->AddInt32("columns", fCandidatesColumns);
@@ -411,7 +416,8 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 
 				im_view->makeSelection(id, mask);
-				im_view->updateWindows(mask);
+				im_view->updateWindows(mask | CIMIClassicView::CANDIDATE_MASK);
+				fCandidatesSelection = -1; // no sense to keep the previous selection
 				retVal = true;
 			}
 			break;
