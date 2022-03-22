@@ -415,9 +415,10 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 						((fBestWordsOffset <= fCandidatesSelection && fBestWordsOffset >= 0) ? 1 : 0);
 				CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 
-				im_view->makeSelection(id, mask);
-				im_view->updateWindows(mask | CIMIClassicView::CANDIDATE_MASK);
+				fCandidatesOffset = 0;
 				fCandidatesSelection = -1; // no sense to keep the previous selection
+				im_view->makeSelection(id, mask);
+				im_view->updateWindows(mask);
 				retVal = true;
 			}
 			break;
@@ -522,6 +523,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 						unsigned mask = 0;
 						CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 
+						fCandidatesOffset = 0;
 						im_view->makeSelection(id, mask);
 						im_view->updateWindows(mask);
 					}
@@ -548,6 +550,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 							CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 							int pgno = fCandidates->first() / (STATUS_MAX_ROWS * STATUS_MAX_COLUMNS) + 1;
 
+							fCandidatesOffset = 0;
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
 							im_view->onCandidatePageRequest(pgno, false);
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
