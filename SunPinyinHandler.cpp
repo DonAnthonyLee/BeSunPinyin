@@ -575,6 +575,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 							int pgno = fCandidates->first() / (STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
 							if(pgno > 0) pgno--;
 
+							fCandidatesOffset = STATUS_MAX_ROWS * STATUS_MAX_COLUMNS - fCandidatesRows * fStatusMaxColumns;
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
 							im_view->onCandidatePageRequest(pgno, false);
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
