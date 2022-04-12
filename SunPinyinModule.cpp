@@ -168,7 +168,15 @@ SunPinyinModule::~SunPinyinModule()
 
 	_DeInitSunPinyin();
 	EmptyMessageOutList();
-	delete fMenu;
+
+	if(fMenu)
+		delete fMenu;
+
+	while(fAlertMessenger.IsValid())
+	{
+		// do nothing
+		snooze(500000);
+	}
 }
 
 
@@ -231,9 +239,13 @@ SunPinyinModule::InitCheck()
 		}
 
 		strInfo << "Unable to initialize SunPinyin input method addon!!!";
-		(new BAlert("SunPinyin",
-			    strInfo.String(),
-			    "OK"))->Go((BInvoker*)NULL);
+		BAlert *alert = new BAlert("SunPinyin", strInfo.String(), "OK");
+#ifdef __LITE_BEAPI__
+		const_cast<SunPinyinModule*>(this)->fAlertMessenger = BMessenger(alert);
+#else
+		fAlertMessenger = BMessenger(alert);
+#endif
+		alert->Go((BInvoker*)NULL);
 	}
 
 	return retVal;
@@ -699,6 +711,13 @@ SunPinyinModule::IMHandler()
 
 extern "C" _EXPORT BInputServerMethod* instantiate_input_method()
 {
+#ifdef __LITE_BEAPI__
+	if(etk_major_version != ETK_MAJOR_VERSION ||
+	   etk_minor_version != ETK_MINOR_VERSION ||
+	   etk_micro_version != ETK_MICRO_VERSION)
+		return NULL;
+#endif
+
 	return new SunPinyinModule();
 }
 

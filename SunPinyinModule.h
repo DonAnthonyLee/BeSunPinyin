@@ -77,6 +77,7 @@ private:
 	bool fActivated;
 
 	BString fErrorInfo;
+	BMessenger fAlertMessenger;
 
 	BMenu*		_GenerateMenu();
 	void		_RegenMenu();
