@@ -73,10 +73,17 @@ SO_CFLAGS =
 SO_SUFFIX = .dylib
 SO_LDFLAGS = -shared -leime
 else
+ifeq ($(IS_BEOS_PLATFORM),1)
 SO_CFLAGS = -fPIC
 SO_SUFFIX = .so
 SO_LDFLAGS = -shared -export-dynamic -L. -l:_APP_
 SO_DEPENDS = _APP_
+else
+SO_CFLAGS = -fPIC
+SO_SUFFIX = .so
+# binutils >= 2.35 cannot use executable file as input to a link
+SO_LDFLAGS = -shared -export-dynamic -leime
+endif
 endif
 endif
 
@@ -120,15 +127,6 @@ _APP_:
 else
 _APP_:
 	ln -s /boot/beos/system/servers/input_server _APP_
-endif
-else
-ifneq ($(HOST),MINGW32)
-_APP_:
-	@if [ -e /usr/bin/eime ]; then \
-		ln -s /usr/bin/eime _APP_; \
-	elif [ -e /usr/bin/eime-xim ]; then \
-		ln -s /usr/bin/eime-xim _APP_; \
-	fi
 endif
 endif
 
