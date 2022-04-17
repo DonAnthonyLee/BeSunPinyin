@@ -410,7 +410,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 		case IM_VK_SPACE:
 			if(fCandidatesSelection >= 0)
 			{
-				unsigned mask = 0;
+				unsigned mask = CIMIClassicView::CANDIDATE_MASK;
 				unsigned id = fCandidatesOffset + fCandidatesSelection +
 						((fBestWordsOffset <= fCandidatesSelection && fBestWordsOffset >= 0) ? 1 : 0);
 				CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
@@ -418,6 +418,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				fCandidatesOffset = 0;
 				fCandidatesSelection = -1; // no sense to keep the previous selection
 				im_view->makeSelection(id, mask);
+				fModule->IMView()->getHotkeyProfile()->rememberLastKey(key);
 				im_view->updateWindows(mask);
 				retVal = true;
 			}
@@ -520,11 +521,12 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 
 					if(id < candidates_size)
 					{
-						unsigned mask = 0;
+						unsigned mask = CIMIClassicView::CANDIDATE_MASK;
 						CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 
 						fCandidatesOffset = 0;
 						im_view->makeSelection(id, mask);
+						fModule->IMView()->getHotkeyProfile()->rememberLastKey(key);
 						im_view->updateWindows(mask);
 					}
 				}
