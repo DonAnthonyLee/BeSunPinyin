@@ -388,7 +388,7 @@ bool
 SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 {
 	bool retVal = false;
-	if(fStatusResponded == false || fCandidates == NULL) return false;
+	if((key.modifiers & IM_RELEASE_MASK) || fStatusResponded == false || fCandidates == NULL) return false;
 
 	int32 candidates_size = fCandidates->size();
 	if(fBestWordsOffset >= 0) candidates_size--;
@@ -418,7 +418,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				fCandidatesOffset = 0;
 				fCandidatesSelection = -1; // no sense to keep the previous selection
 				im_view->makeSelection(id, mask);
-				fModule->IMView()->getHotkeyProfile()->rememberLastKey(key);
+				im_view->getHotkeyProfile()->rememberLastKey(key);
 				im_view->updateWindows(mask);
 				retVal = true;
 			}
@@ -526,7 +526,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 
 						fCandidatesOffset = 0;
 						im_view->makeSelection(id, mask);
-						fModule->IMView()->getHotkeyProfile()->rememberLastKey(key);
+						im_view->getHotkeyProfile()->rememberLastKey(key);
 						im_view->updateWindows(mask);
 					}
 				}

@@ -298,6 +298,10 @@ filter_result
 SunPinyinModule::Filter(BMessage *message, BList *outList)
 {
 	filter_result retVal = B_DISPATCH_MESSAGE;
+	int32 modifiers_mask = ~(B_CAPS_LOCK | B_SCROLL_LOCK | B_NUM_LOCK |
+				 B_LEFT_SHIFT_KEY | B_RIGHT_SHIFT_KEY |
+				 B_LEFT_CONTROL_KEY | B_RIGHT_CONTROL_KEY |
+				 B_LEFT_OPTION_KEY | B_RIGHT_OPTION_KEY);
 
 	// NOTE:
 	//	SunPinyinMessageHandler will probably access SunPinyinModule in other thread,
@@ -305,26 +309,23 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 	Lock();
 
 	// TODO
-	if(fShiftKeyToSwitch && message->what == B_MODIFIERS_CHANGED)
+	if(message->what == B_MODIFIERS_CHANGED)
 	{
 		int32 modifiers, old_modifiers;
 
 		if(message->FindInt32("modifiers", &modifiers) == B_OK &&
 		   message->FindInt32(OLD_MODIFIERS_DESC, &old_modifiers) == B_OK)
 		{
-			int32 mask = (B_CAPS_LOCK | B_SCROLL_LOCK | B_NUM_LOCK |
-				      B_LEFT_SHIFT_KEY | B_RIGHT_SHIFT_KEY |
-				      B_LEFT_CONTROL_KEY | B_RIGHT_CONTROL_KEY |
-				      B_LEFT_OPTION_KEY | B_RIGHT_OPTION_KEY);
-			modifiers &= ~mask;
-			old_modifiers &= ~mask;
+			modifiers &= modifiers_mask;
+			old_modifiers &= modifiers_mask;
 
 			if(modifiers == B_SHIFT_KEY && old_modifiers == 0)
 			{
 				fShiftKeyFollowingOthers = false;
 			}
 			else if(modifiers == 0 && old_modifiers == B_SHIFT_KEY &&
-				fShiftKeyFollowingOthers == false)
+				fShiftKeyFollowingOthers == false &&
+				fShiftKeyToSwitch)
 			{
 				if(fEnabled)
 				{
@@ -356,12 +357,22 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 
 		if(message->FindInt32("key", &key) != B_OK) break;
 		if(message->FindInt32("modifiers", &modifiers) != B_OK) break;
+		modifiers &= modifiers_mask;
 
 		// to be sure it's a single key
 		message->FindString("bytes", &bytes);
 		if(message->FindInt8("byte", 1, &byte) == B_OK) break;
 		if(message->FindInt8("byte", &byte) != B_OK) break;
 		if(!(bytes == NULL || (strlen(bytes) == 1 && *bytes == byte))) break;
+
+		if(byte == ' ' && modifiers == B_SHIFT_KEY)
+		{
+			int v = fIMView->getStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLPUNC);
+			if(message->what == B_KEY_DOWN)
+				fIMView->setStatusAttrValue(CIMIWinHandler::STATUS_ID_FULLPUNC, v ? 0 : 1);
+			retVal = B_SKIP_MESSAGE;
+			break;
+		}
 
 		unsigned int keyCode = 0, keyState = 0;
 		switch(byte)
@@ -384,9 +395,8 @@ SunPinyinModule::Filter(BMessage *message, BList *outList)
 		if(keyCode > 0xffff) break; // unknown key, let it be
 		if(message->what == B_KEY_UP) // filtered key, skip it if we are handling something
 		{
-			if(fIMView->getIC()->isEmpty() == false)
-				retVal = B_SKIP_MESSAGE;
-			break;
+			keyState |= IM_RELEASE_MASK;
+			if(fIMView->getIC()->isEmpty()) break;
 		}
 
 		if(modifiers & B_SHIFT_KEY) keyState |= IM_SHIFT_MASK;
