@@ -99,13 +99,15 @@ SunPinyinStatusWindow::DispatchMessage(BMessage *msg, BHandler *target)
 						h = Frame().Height();
 
 					// adjust the postion
+					if(IsHidden())
+						MoveTo(where + BPoint(0, h + 2));
 					BScreen screen(this);
-					BRect scrRect = screen.Frame().OffsetToSelf(B_ORIGIN);
+					BRect scrRect = screen.Frame();
 					BRect rect = Frame().OffsetToSelf(where + BPoint(0, h + 2));
-					if(rect.bottom > scrRect.bottom && where.y - rect.Height() - 2 > 0)
+					if(rect.bottom > scrRect.bottom && where.y - rect.Height() - 2 > scrRect.top)
 						rect.OffsetBy(0, where.y - rect.Height() - 2 - rect.top);
-					if(rect.left < 0)
-						rect.OffsetBy(-rect.left, 0);
+					if(rect.left < scrRect.left)
+						rect.OffsetBy(scrRect.left - rect.left, 0);
 					else if(rect.right > scrRect.right && rect.Width() < scrRect.Width())
 						rect.OffsetBy(scrRect.right - rect.right, 0);
 					MoveTo(rect.LeftTop());
