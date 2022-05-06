@@ -53,7 +53,7 @@ scons --prefix=/boot/system
 
 ## 编译后如何启用
 
-+ BeOS/HaikuOS
++ BeOS/HaikuOS 系统
 
 将编译后的 SunPinyin.so 复制至 input_server 的 add-ons 目录 (建议采用 /boot/home/config/add-ons/input_server/methods )，然后重新启动 input_server（或重新启动系统）。
 
@@ -62,10 +62,13 @@ scons --prefix=/boot/system
 若遇启动异常，可于启动时按动空格键并禁用 user add-ons 即可。
 
 
-+ 其它平台
++ Windows 系统
 
-将编译后的 SunPinyin.so 或 SunPinyin.dll 等复制至 EIME 的 addons 目录下，然后重新启动相关实现。
+将编译后的 SunPinyin.dll（必要时进行代码签名） 复制至 %APPDATA%\eime\addons 目录，然后重新启动相关实现。
 
-*注：Windows 平台可将 libsunpinyin.dll 及 libsqlite3.dll 等依赖运行时文件复制到 eime.dll 所在目录。*
+*注：libsunpinyin.dll 及 sqlite3.dll 等依赖运行时文件复制到 %APPDATA%\eime 目录。*
 
 
++ 其它系统
+
+将编译后的 SunPinyin.so 复制至 EIME 的 addons 目录，然后重新启动相关实现。

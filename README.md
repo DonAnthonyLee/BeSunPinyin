@@ -71,10 +71,15 @@ Copy the file named "SunPinyin.so" to add-ons directory (like /boot/home/config/
 If anything blocked booting, you can press the SPACE when booting and select "Disable user add-ons" to disable it.
 
 
++ Windows
+
+Copy the file named "SunPinyin.dll" (code signed if necessary) to %APPDATA\eime\addons, then restart the implementation of EIME.
+
+*Note: You can copy the files named "libsunpinyin.dll" and "sqlite3.dll" to %APPDATA\eime .*
+
+
 + Other platforms
 
-Copy the file named "SunPinyin.so" or "SunPinyin.dll" to "addons" directory of EIME, then restart the implementation of EIME.
-
-*Note: You can copy the files named "libsunpinyin.dll" and "libsqlite3.dll" to the the same directory contains "eime.dll" when using Windows.*
+Copy the file named "SunPinyin.so" to "addons" directory of EIME, then restart the implementation of EIME.
 
 
