@@ -25,7 +25,7 @@ public:
 #else
 	void		StatusResponded(const BMessage *msg);
 	void		LocationReplied(const BMessage *msg);
-	bool		checkKeyEvent(CKeyEvent &key);
+	bool		checkKeyEvent(CKeyEvent &key, bool simulate_release = false);
 #endif
 
 private:

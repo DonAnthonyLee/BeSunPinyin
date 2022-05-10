@@ -180,7 +180,7 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 					if(btns >= 0)
 					{
 						CKeyEvent key(IM_VK_SPACE, ' ', 0);
-						checkKeyEvent(key);
+						checkKeyEvent(key, true);
 						fModule->EnqueueMessageOutList();
 					}
 				}
@@ -196,13 +196,13 @@ SunPinyinHandler::StatusResponded(const BMessage *msg)
 					if(offset == fCandidatesRows * fCandidatesColumns)
 					{
 						CKeyEvent key(IM_VK_PAGE_DOWN, 0, 0);
-						checkKeyEvent(key);
+						checkKeyEvent(key, true);
 						fModule->EnqueueMessageOutList();
 					}
 					else if(offset == -fCandidatesRows * fCandidatesColumns)
 					{
 						CKeyEvent key(IM_VK_PAGE_UP, 0, 0);
-						checkKeyEvent(key);
+						checkKeyEvent(key, true);
 						fModule->EnqueueMessageOutList();
 					}
 					else // free offset by scrollbar, &etc.
@@ -385,7 +385,7 @@ SunPinyinHandler::StatusSelectionChanged()
 
 
 bool
-SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
+SunPinyinHandler::checkKeyEvent(CKeyEvent &key, bool simulate_release)
 {
 	bool retVal = false;
 	if((key.modifiers & IM_RELEASE_MASK) || fStatusResponded == false || fCandidates == NULL) return false;
@@ -410,7 +410,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 		case IM_VK_SPACE:
 			if(fCandidatesSelection >= 0)
 			{
-				unsigned mask = CIMIClassicView::CANDIDATE_MASK;
+				unsigned mask = 0;
 				unsigned id = fCandidatesOffset + fCandidatesSelection +
 						((fBestWordsOffset <= fCandidatesSelection && fBestWordsOffset >= 0) ? 1 : 0);
 				CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
@@ -420,6 +420,11 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 				im_view->makeSelection(id, mask);
 				im_view->getHotkeyProfile()->rememberLastKey(key);
 				im_view->updateWindows(mask);
+				if(simulate_release)
+				{
+					key.modifiers |= IM_RELEASE_MASK;
+					im_view->onKeyEvent(key);
+				}
 				retVal = true;
 			}
 			break;
@@ -521,7 +526,7 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 
 					if(id < candidates_size)
 					{
-						unsigned mask = CIMIClassicView::CANDIDATE_MASK;
+						unsigned mask = 0;
 						CIMIClassicView *im_view = cast_as(fModule->IMView(), CIMIClassicView);
 
 						fCandidatesOffset = 0;
@@ -556,7 +561,13 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
 							im_view->onCandidatePageRequest(pgno, false);
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
+							im_view->getHotkeyProfile()->rememberLastKey(key);
 							im_view->updateWindows(CIMIClassicView::CANDIDATE_MASK);
+							if(simulate_release)
+							{
+								key.modifiers |= IM_RELEASE_MASK;
+								im_view->onKeyEvent(key);
+							}
 						}
 					}
 
@@ -581,7 +592,13 @@ SunPinyinHandler::checkKeyEvent(CKeyEvent &key)
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS);
 							im_view->onCandidatePageRequest(pgno, false);
 							im_view->setCandiWindowSize(STATUS_MAX_ROWS * STATUS_MAX_COLUMNS + 1);
+							im_view->getHotkeyProfile()->rememberLastKey(key);
 							im_view->updateWindows(CIMIClassicView::CANDIDATE_MASK);
+							if(simulate_release)
+							{
+								key.modifiers |= IM_RELEASE_MASK;
+								im_view->onKeyEvent(key);
+							}
 						}
 					}
 
